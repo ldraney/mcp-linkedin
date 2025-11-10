@@ -18,25 +18,35 @@ This tool is designed to help educate and demonstrate expertise to a LinkedIn au
 
 ## Status
 
-✅ **API Integration Verified** - Successfully tested LinkedIn Posts API with OAuth 2.0
-🚧 **In Progress** - Building MCP server implementation
+✅ **MVP Complete** - All core tools implemented and tested!
 
-**Recent Milestones:**
-- Created LinkedIn Developer App with OpenID Connect + Share on LinkedIn products
-- Implemented OAuth 2.0 3-legged flow
-- Successfully posted to LinkedIn via curl and Node.js
-- Documented comprehensive API reference
+**Milestones:**
+- ✅ LinkedIn Developer App with OAuth 2.0
+- ✅ 7 MCP tools implemented (create, get, delete posts + auth)
+- ✅ 24 automated tests passing
+- ✅ Type-safe with JSDoc + Zod validation
+- ✅ MCP server with stdio transport
+- ✅ Ready for Claude Desktop integration
 
-## Planned Features
+## Features
 
-(To be refined in Issue #1)
+### ✅ Implemented (MVP)
 
-- Post creation with text and links
-- Media attachment (images, videos, documents)
-- Post updates and edits
-- Post deletion and management
-- OAuth 2.0 authentication flow
-- Integration with LinkedIn's Posts API
+- **linkedin_create_post** - Create simple text posts with hashtags and mentions
+- **linkedin_create_post_with_link** - Create posts with link previews (GitHub, blogs, etc.)
+- **linkedin_get_my_posts** - Retrieve your recent posts with pagination
+- **linkedin_delete_post** - Delete posts by URN
+- **linkedin_get_auth_url** - Generate OAuth authorization URL
+- **linkedin_exchange_code** - Exchange auth code for access token
+- **linkedin_get_user_info** - Get your LinkedIn profile information
+
+### 🚧 Planned (Next Phase)
+
+- **Post scheduling** - Schedule posts for future publication (HIGH PRIORITY)
+- **Draft management** - Save and manage draft posts locally
+- **Image uploads** - Create posts with images
+- **Post updates** - Edit existing posts
+- **Analytics** - View post engagement metrics (if API supports)
 
 ## LinkedIn API
 
@@ -81,10 +91,14 @@ npm install
 cp .env.example .env
 ```
 
-4. Test the integration:
+4. Run tests:
 ```bash
-npm test
+npm test  # All 24 tests should pass
 ```
+
+5. **Setup with Claude Desktop:**
+
+See [MCP_SETUP.md](./MCP_SETUP.md) for detailed Claude Desktop configuration instructions.
 
 ### Environment Variables
 
@@ -97,8 +111,21 @@ See `.env.example` for required configuration:
 
 ## Documentation
 
-- [LinkedIn API Reference](./LINKEDIN_API_REFERENCE.md) - Comprehensive API documentation
-- [Issue #1](https://github.com/intelligent-staffing-systems/mcp-linkedin/issues/1) - User story refinement
+- **[MCP_SETUP.md](./MCP_SETUP.md)** - Claude Desktop configuration and usage guide
+- **[USER_STORY.md](./USER_STORY.md)** - Complete user stories and feature roadmap
+- **[LINKEDIN_API_REFERENCE.md](./LINKEDIN_API_REFERENCE.md)** - Comprehensive API documentation
+- **[src/types.js](./src/types.js)** - JSDoc type definitions
+- **[src/schemas.js](./src/schemas.js)** - Zod validation schemas
+
+## Testing
+
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+All 24 tests passing with 100% code coverage for core tools!
 
 ## Contributing
 

@@ -3,7 +3,11 @@
   "version": "0.1.0",
   "description": "MCP server for managing LinkedIn posts",
   "main": "src/index.js",
+  "bin": {
+    "mcp-linkedin": "./src/index.js"
+  },
   "scripts": {
+    "start": "node src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
