@@ -1,10 +1,14 @@
 /**
  * @file TDD tests for LinkedIn MCP tools
- * These tests are written FIRST and will fail until we implement the tools.
+ * Tests use mocked LinkedIn API responses for unit testing
  */
 
 const { z } = require('zod');
 const schemas = require('../src/schemas');
+
+// Mock the LinkedIn API module before requiring tools
+jest.mock('../src/linkedin-api');
+const LinkedInAPI = require('../src/linkedin-api');
 
 // Mock environment variables
 process.env.LINKEDIN_CLIENT_ID = 'test_client_id';
@@ -18,8 +22,12 @@ describe('LinkedIn MCP Tools - TDD', () => {
   let tools;
 
   beforeAll(async () => {
-    // Import tools module (doesn't exist yet - will fail until implemented)
     tools = require('../src/tools');
+  });
+
+  beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
   });
 
   describe('linkedin_create_post', () => {
@@ -61,6 +69,12 @@ describe('LinkedIn MCP Tools - TDD', () => {
     });
 
     it('should return CreatePostOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.createPost = jest.fn().mockResolvedValue({
+        postUrn: 'urn:li:share:123456789',
+        statusCode: 201
+      });
+
       const input = {
         commentary: 'Test post',
         visibility: 'PUBLIC'
@@ -116,6 +130,12 @@ describe('LinkedIn MCP Tools - TDD', () => {
     });
 
     it('should return CreatePostOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.createPost = jest.fn().mockResolvedValue({
+        postUrn: 'urn:li:share:987654321',
+        statusCode: 201
+      });
+
       const input = {
         commentary: 'Test link post',
         url: 'https://github.com/ldraney/test',
@@ -161,6 +181,33 @@ describe('LinkedIn MCP Tools - TDD', () => {
     });
 
     it('should return GetPostsOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.getPosts = jest.fn().mockResolvedValue({
+        elements: [
+          {
+            id: 'urn:li:share:111',
+            author: 'urn:li:person:test',
+            commentary: 'Test post 1',
+            visibility: 'PUBLIC',
+            created: { time: Date.now() },
+            lifecycleState: 'PUBLISHED'
+          },
+          {
+            id: 'urn:li:share:222',
+            author: 'urn:li:person:test',
+            commentary: 'Test post 2',
+            visibility: 'PUBLIC',
+            created: { time: Date.now() },
+            lifecycleState: 'PUBLISHED'
+          }
+        ],
+        paging: {
+          count: 2,
+          start: 0,
+          total: 10
+        }
+      });
+
       const input = { limit: 5, offset: 0 };
       const result = await tools.linkedin_get_my_posts(input);
 
@@ -172,6 +219,7 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result).toHaveProperty('offset');
       expect(result).toHaveProperty('hasMore');
       expect(Array.isArray(result.posts)).toBe(true);
+      expect(result.count).toBe(2);
     });
   });
 
@@ -204,6 +252,11 @@ describe('LinkedIn MCP Tools - TDD', () => {
     });
 
     it('should return DeletePostOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.deletePost = jest.fn().mockResolvedValue({
+        statusCode: 204
+      });
+
       const input = {
         postUrn: 'urn:li:share:123456'
       };
@@ -263,6 +316,21 @@ describe('LinkedIn MCP Tools - TDD', () => {
     });
 
     it('should return ExchangeCodeOutput on success', async () => {
+      // Mock static method and getUserInfo
+      LinkedInAPI.exchangeAuthCode = jest.fn().mockResolvedValue({
+        access_token: 'mock_access_token',
+        expires_in: 5184000,
+        scope: 'openid profile email w_member_social',
+        token_type: 'Bearer'
+      });
+
+      LinkedInAPI.prototype.getUserInfo = jest.fn().mockResolvedValue({
+        sub: 'mock-person-id',
+        name: 'Test User',
+        email: 'test@example.com',
+        picture: 'https://example.com/pic.jpg'
+      });
+
       const input = {
         authorizationCode: 'test_auth_code_12345'
       };
@@ -282,6 +350,14 @@ describe('LinkedIn MCP Tools - TDD', () => {
 
   describe('linkedin_get_user_info', () => {
     it('should return GetUserInfoOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.getUserInfo = jest.fn().mockResolvedValue({
+        sub: 'test-person-id',
+        name: 'Test User',
+        email: 'test@example.com',
+        picture: 'https://example.com/picture.jpg'
+      });
+
       const result = await tools.linkedin_get_user_info();
 
       const validation = schemas.GetUserInfoOutputSchema.safeParse(result);
