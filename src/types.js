@@ -273,6 +273,92 @@
  */
 
 // ============================================================================
+// Scheduling Types
+// ============================================================================
+
+/**
+ * Status of a scheduled post
+ * @typedef {'pending' | 'published' | 'failed' | 'cancelled'} ScheduledPostStatus
+ */
+
+/**
+ * A scheduled LinkedIn post stored in the database
+ * @typedef {Object} ScheduledPost
+ * @property {string} id - Unique UUID for the scheduled post
+ * @property {string} commentary - Post text content
+ * @property {string|null} url - Optional URL for link posts
+ * @property {Visibility} visibility - Post visibility level
+ * @property {string} scheduledTime - ISO 8601 datetime when post should be published
+ * @property {ScheduledPostStatus} status - Current status of the scheduled post
+ * @property {string} createdAt - ISO 8601 datetime when the post was scheduled
+ * @property {string|null} publishedAt - ISO 8601 datetime when the post was actually published
+ * @property {PostURN|null} postUrn - URN of the post after publishing
+ * @property {string|null} errorMessage - Error message if publishing failed
+ * @property {number} retryCount - Number of publish attempts
+ */
+
+/**
+ * Input parameters for scheduling a post
+ * @typedef {Object} SchedulePostInput
+ * @property {string} commentary - Post text (supports hashtags, mentions)
+ * @property {string} scheduledTime - ISO 8601 datetime (must be in the future)
+ * @property {string} [url] - Optional URL for link posts
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
+ * Input parameters for listing scheduled posts
+ * @typedef {Object} ListScheduledPostsInput
+ * @property {ScheduledPostStatus} [status] - Filter by status
+ * @property {number} [limit=50] - Max posts to retrieve (1-100)
+ */
+
+/**
+ * Input parameters for cancelling a scheduled post
+ * @typedef {Object} CancelScheduledPostInput
+ * @property {string} postId - UUID of the scheduled post to cancel
+ */
+
+/**
+ * Input parameters for getting a single scheduled post
+ * @typedef {Object} GetScheduledPostInput
+ * @property {string} postId - UUID of the scheduled post
+ */
+
+/**
+ * Output from scheduling a post
+ * @typedef {Object} SchedulePostOutput
+ * @property {string} postId - UUID of the scheduled post
+ * @property {string} scheduledTime - ISO 8601 datetime when post will be published
+ * @property {ScheduledPostStatus} status - Current status (always 'pending')
+ * @property {string} message - Success message
+ */
+
+/**
+ * Output from listing scheduled posts
+ * @typedef {Object} ListScheduledPostsOutput
+ * @property {Array<ScheduledPost>} posts - Array of scheduled posts
+ * @property {number} count - Number of posts returned
+ * @property {string} message - Summary message
+ */
+
+/**
+ * Output from cancelling a scheduled post
+ * @typedef {Object} CancelScheduledPostOutput
+ * @property {string} postId - UUID of the cancelled post
+ * @property {'cancelled'} status - Status after cancellation
+ * @property {string} message - Success message
+ * @property {boolean} success - Always true if no error
+ */
+
+/**
+ * Output from getting a scheduled post
+ * @typedef {Object} GetScheduledPostOutput
+ * @property {ScheduledPost} post - The scheduled post details
+ * @property {string} message - Status message
+ */
+
+// ============================================================================
 // Error Types
 // ============================================================================
 

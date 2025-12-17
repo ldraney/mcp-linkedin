@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const LinkedInAPI = require('./linkedin-api');
 const schemas = require('./schemas');
+const { getDatabase } = require('./database');
 
 /**
  * Get LinkedIn API client instance
@@ -380,6 +381,133 @@ async function linkedin_add_reaction(input) {
   };
 }
 
+// ============================================================================
+// Scheduling Tools
+// ============================================================================
+
+/**
+ * Schedule a LinkedIn post for future publication
+ * @param {import('./types').SchedulePostInput} input
+ * @returns {Promise<import('./types').SchedulePostOutput>}
+ */
+async function linkedin_schedule_post(input) {
+  // Validate input (includes future time check)
+  const validated = schemas.SchedulePostInputSchema.parse(input);
+
+  const db = getDatabase();
+
+  const scheduledPost = db.addScheduledPost({
+    commentary: validated.commentary,
+    scheduledTime: validated.scheduledTime,
+    url: validated.url || null,
+    visibility: validated.visibility
+  });
+
+  const scheduledDate = new Date(validated.scheduledTime);
+  const formattedTime = scheduledDate.toLocaleString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short'
+  });
+
+  return {
+    postId: scheduledPost.id,
+    scheduledTime: scheduledPost.scheduledTime,
+    status: scheduledPost.status,
+    message: `Post scheduled for ${formattedTime}`
+  };
+}
+
+/**
+ * List scheduled posts, optionally filtered by status
+ * @param {import('./types').ListScheduledPostsInput} input
+ * @returns {Promise<import('./types').ListScheduledPostsOutput>}
+ */
+async function linkedin_list_scheduled_posts(input = {}) {
+  // Validate input with defaults
+  const validated = schemas.ListScheduledPostsInputSchema.parse(input);
+
+  const db = getDatabase();
+  const posts = db.getScheduledPosts(validated.status || null, validated.limit);
+
+  const statusMsg = validated.status
+    ? `${validated.status} posts`
+    : 'all scheduled posts';
+
+  return {
+    posts,
+    count: posts.length,
+    message: `Found ${posts.length} ${statusMsg}`
+  };
+}
+
+/**
+ * Cancel a scheduled post (must be pending)
+ * @param {import('./types').CancelScheduledPostInput} input
+ * @returns {Promise<import('./types').CancelScheduledPostOutput>}
+ */
+async function linkedin_cancel_scheduled_post(input) {
+  // Validate input
+  const validated = schemas.CancelScheduledPostInputSchema.parse(input);
+
+  const db = getDatabase();
+  const cancelledPost = db.cancelPost(validated.postId);
+
+  if (!cancelledPost) {
+    throw new Error(`Post not found or not in pending status: ${validated.postId}`);
+  }
+
+  return {
+    postId: cancelledPost.id,
+    status: 'cancelled',
+    message: 'Scheduled post cancelled successfully',
+    success: true
+  };
+}
+
+/**
+ * Get details of a single scheduled post
+ * @param {import('./types').GetScheduledPostInput} input
+ * @returns {Promise<import('./types').GetScheduledPostOutput>}
+ */
+async function linkedin_get_scheduled_post(input) {
+  // Validate input
+  const validated = schemas.GetScheduledPostInputSchema.parse(input);
+
+  const db = getDatabase();
+  const post = db.getScheduledPost(validated.postId);
+
+  if (!post) {
+    throw new Error(`Scheduled post not found: ${validated.postId}`);
+  }
+
+  let statusMessage;
+  switch (post.status) {
+    case 'pending':
+      statusMessage = `Scheduled for ${new Date(post.scheduledTime).toLocaleString()}`;
+      break;
+    case 'published':
+      statusMessage = `Published at ${new Date(post.publishedAt).toLocaleString()}`;
+      break;
+    case 'failed':
+      statusMessage = `Failed: ${post.errorMessage} (${post.retryCount} attempts)`;
+      break;
+    case 'cancelled':
+      statusMessage = 'Cancelled';
+      break;
+    default:
+      statusMessage = `Status: ${post.status}`;
+  }
+
+  return {
+    post,
+    message: statusMessage
+  };
+}
+
 module.exports = {
   linkedin_create_post,
   linkedin_create_post_with_link,
@@ -392,5 +520,10 @@ module.exports = {
   linkedin_create_post_with_image,
   linkedin_refresh_token,
   linkedin_add_comment,
-  linkedin_add_reaction
+  linkedin_add_reaction,
+  // Scheduling tools
+  linkedin_schedule_post,
+  linkedin_list_scheduled_posts,
+  linkedin_cancel_scheduled_post,
+  linkedin_get_scheduled_post
 };

@@ -10,6 +10,9 @@ const schemas = require('../src/schemas');
 jest.mock('../src/linkedin-api');
 const LinkedInAPI = require('../src/linkedin-api');
 
+// Mock the database module
+jest.mock('../src/database');
+
 // Mock environment variables
 process.env.LINKEDIN_CLIENT_ID = 'test_client_id';
 process.env.LINKEDIN_CLIENT_SECRET = 'test_secret';
@@ -693,6 +696,354 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result.success).toBe(true);
       expect(result).toHaveProperty('message');
       expect(result.message).toContain('PRAISE');
+    });
+  });
+
+  // ============================================================================
+  // Scheduling Tools Tests
+  // ============================================================================
+
+  describe('linkedin_schedule_post', () => {
+    const { getDatabase } = require('../src/database');
+
+    beforeEach(() => {
+      // Reset mock for each test
+      getDatabase.mockReturnValue({
+        addScheduledPost: jest.fn().mockReturnValue({
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          commentary: 'Scheduled test post',
+          url: null,
+          visibility: 'PUBLIC',
+          scheduledTime: '2030-01-15T09:00:00.000Z',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          publishedAt: null,
+          postUrn: null,
+          errorMessage: null,
+          retryCount: 0
+        })
+      });
+    });
+
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        commentary: 'Scheduled post #testing',
+        scheduledTime: '2030-01-15T09:00:00Z',
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty commentary', () => {
+      const invalidInput = {
+        commentary: '',
+        scheduledTime: '2030-01-15T09:00:00Z'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject scheduledTime in the past', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        scheduledTime: '2020-01-15T09:00:00Z'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('must be in the future');
+    });
+
+    it('should reject invalid datetime format', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        scheduledTime: 'not-a-date'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        commentary: 'Test',
+        scheduledTime: '2030-01-15T09:00:00Z'
+      };
+      const parsed = schemas.SchedulePostInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should allow optional URL', () => {
+      const input = {
+        commentary: 'Check this out!',
+        scheduledTime: '2030-01-15T09:00:00Z',
+        url: 'https://github.com/test/project'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid URL format', () => {
+      const invalidInput = {
+        commentary: 'Test',
+        scheduledTime: '2030-01-15T09:00:00Z',
+        url: 'not-a-url'
+      };
+
+      const result = schemas.SchedulePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return SchedulePostOutput on success', async () => {
+      const input = {
+        commentary: 'Scheduled test post',
+        scheduledTime: '2030-01-15T09:00:00Z',
+        visibility: 'PUBLIC'
+      };
+
+      const result = await tools.linkedin_schedule_post(input);
+
+      const validation = schemas.SchedulePostOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result).toHaveProperty('postId');
+      expect(result).toHaveProperty('scheduledTime');
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('message');
+      expect(result.status).toBe('pending');
+    });
+  });
+
+  describe('linkedin_list_scheduled_posts', () => {
+    const { getDatabase } = require('../src/database');
+
+    beforeEach(() => {
+      getDatabase.mockReturnValue({
+        getScheduledPosts: jest.fn().mockReturnValue([
+          {
+            id: '123e4567-e89b-12d3-a456-426614174000',
+            commentary: 'Scheduled post 1',
+            url: null,
+            visibility: 'PUBLIC',
+            scheduledTime: '2030-01-15T09:00:00.000Z',
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            publishedAt: null,
+            postUrn: null,
+            errorMessage: null,
+            retryCount: 0
+          },
+          {
+            id: '223e4567-e89b-12d3-a456-426614174001',
+            commentary: 'Scheduled post 2',
+            url: 'https://example.com',
+            visibility: 'PUBLIC',
+            scheduledTime: '2030-01-16T10:00:00.000Z',
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            publishedAt: null,
+            postUrn: null,
+            errorMessage: null,
+            retryCount: 0
+          }
+        ])
+      });
+    });
+
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        status: 'pending',
+        limit: 50
+      };
+
+      const result = schemas.ListScheduledPostsInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should use default limit of 50', () => {
+      const input = {};
+      const parsed = schemas.ListScheduledPostsInputSchema.parse(input);
+      expect(parsed.limit).toBe(50);
+    });
+
+    it('should accept all valid status values', () => {
+      const statuses = ['pending', 'published', 'failed', 'cancelled'];
+
+      statuses.forEach(status => {
+        const input = { status };
+        const result = schemas.ListScheduledPostsInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject invalid status', () => {
+      const invalidInput = { status: 'invalid' };
+      const result = schemas.ListScheduledPostsInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject limit over 100', () => {
+      const invalidInput = { limit: 101 };
+      const result = schemas.ListScheduledPostsInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return ListScheduledPostsOutput on success', async () => {
+      const input = { limit: 10 };
+
+      const result = await tools.linkedin_list_scheduled_posts(input);
+
+      const validation = schemas.ListScheduledPostsOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result).toHaveProperty('posts');
+      expect(result).toHaveProperty('count');
+      expect(result).toHaveProperty('message');
+      expect(Array.isArray(result.posts)).toBe(true);
+      expect(result.count).toBe(2);
+    });
+  });
+
+  describe('linkedin_cancel_scheduled_post', () => {
+    const { getDatabase } = require('../src/database');
+
+    beforeEach(() => {
+      getDatabase.mockReturnValue({
+        cancelPost: jest.fn().mockReturnValue({
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          commentary: 'Cancelled post',
+          url: null,
+          visibility: 'PUBLIC',
+          scheduledTime: '2030-01-15T09:00:00.000Z',
+          status: 'cancelled',
+          createdAt: new Date().toISOString(),
+          publishedAt: null,
+          postUrn: null,
+          errorMessage: null,
+          retryCount: 0
+        })
+      });
+    });
+
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      const result = schemas.CancelScheduledPostInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid UUID format', () => {
+      const invalidInput = {
+        postId: 'not-a-uuid'
+      };
+
+      const result = schemas.CancelScheduledPostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('Invalid');
+    });
+
+    it('should return CancelScheduledPostOutput on success', async () => {
+      const input = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      const result = await tools.linkedin_cancel_scheduled_post(input);
+
+      const validation = schemas.CancelScheduledPostOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result.postId).toBe(input.postId);
+      expect(result.status).toBe('cancelled');
+      expect(result.success).toBe(true);
+      expect(result).toHaveProperty('message');
+    });
+
+    it('should throw error when post not found or not pending', async () => {
+      getDatabase.mockReturnValue({
+        cancelPost: jest.fn().mockReturnValue(null)
+      });
+
+      const input = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      await expect(tools.linkedin_cancel_scheduled_post(input))
+        .rejects.toThrow('Post not found or not in pending status');
+    });
+  });
+
+  describe('linkedin_get_scheduled_post', () => {
+    const { getDatabase } = require('../src/database');
+
+    beforeEach(() => {
+      getDatabase.mockReturnValue({
+        getScheduledPost: jest.fn().mockReturnValue({
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          commentary: 'Test scheduled post',
+          url: null,
+          visibility: 'PUBLIC',
+          scheduledTime: '2030-01-15T09:00:00.000Z',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          publishedAt: null,
+          postUrn: null,
+          errorMessage: null,
+          retryCount: 0
+        })
+      });
+    });
+
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      const result = schemas.GetScheduledPostInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid UUID format', () => {
+      const invalidInput = {
+        postId: 'invalid-uuid'
+      };
+
+      const result = schemas.GetScheduledPostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return GetScheduledPostOutput on success', async () => {
+      const input = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      const result = await tools.linkedin_get_scheduled_post(input);
+
+      const validation = schemas.GetScheduledPostOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result).toHaveProperty('post');
+      expect(result).toHaveProperty('message');
+      expect(result.post.id).toBe(input.postId);
+    });
+
+    it('should throw error when post not found', async () => {
+      getDatabase.mockReturnValue({
+        getScheduledPost: jest.fn().mockReturnValue(null)
+      });
+
+      const input = {
+        postId: '123e4567-e89b-12d3-a456-426614174000'
+      };
+
+      await expect(tools.linkedin_get_scheduled_post(input))
+        .rejects.toThrow('Scheduled post not found');
     });
   });
 });

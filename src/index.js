@@ -257,6 +257,84 @@ const TOOL_DEFINITIONS = [
       },
       required: ['postUrn', 'reactionType']
     }
+  },
+  // Scheduling tools
+  {
+    name: 'linkedin_schedule_post',
+    description: 'Schedule a LinkedIn post for future publication. The post will be stored locally and published by the scheduler daemon when the scheduled time arrives.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commentary: {
+          type: 'string',
+          description: 'Post text content (max 3000 characters). Supports hashtags (#tag) and mentions.'
+        },
+        scheduledTime: {
+          type: 'string',
+          description: 'ISO 8601 datetime for when to publish (must be in the future). Example: "2025-01-15T09:00:00Z"'
+        },
+        url: {
+          type: 'string',
+          description: 'Optional URL to include with link preview (for link posts)'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the post'
+        }
+      },
+      required: ['commentary', 'scheduledTime']
+    }
+  },
+  {
+    name: 'linkedin_list_scheduled_posts',
+    description: 'List all scheduled posts, optionally filtered by status (pending, published, failed, cancelled).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'published', 'failed', 'cancelled'],
+          description: 'Filter by status. If not specified, returns all scheduled posts.'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of posts to retrieve (1-100)',
+          default: 50,
+          minimum: 1,
+          maximum: 100
+        }
+      }
+    }
+  },
+  {
+    name: 'linkedin_cancel_scheduled_post',
+    description: 'Cancel a scheduled post before it is published. Only pending posts can be cancelled.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        postId: {
+          type: 'string',
+          description: 'UUID of the scheduled post to cancel'
+        }
+      },
+      required: ['postId']
+    }
+  },
+  {
+    name: 'linkedin_get_scheduled_post',
+    description: 'Get details of a single scheduled post by its ID.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        postId: {
+          type: 'string',
+          description: 'UUID of the scheduled post'
+        }
+      },
+      required: ['postId']
+    }
   }
 ];
 
@@ -325,6 +403,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'linkedin_add_reaction':
         result = await tools.linkedin_add_reaction(args);
+        break;
+
+      // Scheduling tools
+      case 'linkedin_schedule_post':
+        result = await tools.linkedin_schedule_post(args);
+        break;
+
+      case 'linkedin_list_scheduled_posts':
+        result = await tools.linkedin_list_scheduled_posts(args);
+        break;
+
+      case 'linkedin_cancel_scheduled_post':
+        result = await tools.linkedin_cancel_scheduled_post(args);
+        break;
+
+      case 'linkedin_get_scheduled_post':
+        result = await tools.linkedin_get_scheduled_post(args);
         break;
 
       default:

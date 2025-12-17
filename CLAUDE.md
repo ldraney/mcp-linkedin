@@ -7,14 +7,16 @@ MCP server for LinkedIn post management via Claude Desktop.
 ```
 src/
   index.js       # MCP server entry point (stdio transport)
-  tools.js       # 12 tool implementations
+  tools.js       # 16 tool implementations
   linkedin-api.js # LinkedIn REST API client
   schemas.js     # Zod validation schemas
   types.js       # JSDoc type definitions
-__tests__/       # Jest test suite (50 tests)
+  database.js    # SQLite wrapper for scheduled posts
+  scheduler.js   # Background scheduler daemon
+__tests__/       # Jest test suite (72 tests)
 ```
 
-## Current Tools (Phase 2.5 Complete)
+## Current Tools (Phase 3 Complete)
 
 | Tool | Description |
 |------|-------------|
@@ -30,6 +32,10 @@ __tests__/       # Jest test suite (50 tests)
 | `linkedin_exchange_code` | Complete OAuth |
 | `linkedin_refresh_token` | Refresh expired access token |
 | `linkedin_get_user_info` | Get profile info |
+| `linkedin_schedule_post` | Schedule a post for future publication |
+| `linkedin_list_scheduled_posts` | List scheduled posts by status |
+| `linkedin_cancel_scheduled_post` | Cancel a pending scheduled post |
+| `linkedin_get_scheduled_post` | Get details of a scheduled post |
 
 ## LinkedIn API
 
@@ -62,7 +68,8 @@ Required in `.env`:
 
 ```bash
 npm start        # Start MCP server
-npm test         # Run tests (50 passing)
+npm scheduler    # Start scheduler daemon (runs every minute)
+npm test         # Run tests (72 passing)
 ```
 
 ## Roadmap
@@ -93,22 +100,31 @@ npm test         # Run tests (50 passing)
   - Endpoint: `POST /rest/reactions?actor={personUrn}`
   - Types: LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, ENTERTAINMENT
 
-### Phase 3: Scheduling (Custom Implementation)
+### Phase 3: Scheduling (COMPLETE)
 
-LinkedIn API does NOT support native scheduling. Must build custom:
+LinkedIn API does NOT support native scheduling. Built custom solution:
 
-- [ ] **`linkedin_schedule_post`** - Schedule for future time
-  - Store in SQLite (todos.db already exists)
-  - Fields: id, commentary, url, visibility, scheduled_time, status
+- [x] **`linkedin_schedule_post`** - Schedule for future time
+  - Stores in SQLite (scheduled_posts.db)
+  - Fields: id (UUID), commentary, url, visibility, scheduled_time, status
+  - Validates scheduledTime is in the future
 
-- [ ] **`linkedin_list_scheduled_posts`** - View pending posts
+- [x] **`linkedin_list_scheduled_posts`** - View posts by status
+  - Filter by: pending, published, failed, cancelled
+  - Paginated with configurable limit
 
-- [ ] **`linkedin_cancel_scheduled_post`** - Cancel before publish
+- [x] **`linkedin_cancel_scheduled_post`** - Cancel before publish
+  - Only pending posts can be cancelled
+  - Returns updated post status
 
-- [ ] **Scheduler daemon** - Cron/node-cron to check and publish
-  - Check every minute for posts due
-  - Retry logic for failures
-  - Log all events
+- [x] **`linkedin_get_scheduled_post`** - Get single post details
+  - Returns full post metadata and status message
+
+- [x] **Scheduler daemon** (`npm run scheduler`)
+  - Uses node-cron to check every minute
+  - Publishes due posts automatically
+  - Retry logic (3 attempts max)
+  - Graceful shutdown on SIGINT/SIGTERM
 
 ### Phase 4: Rich Media (All possible with current `w_member_social` scope)
 

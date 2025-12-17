@@ -123,6 +123,28 @@ const TokenResponseSchema = z.object({
 });
 
 // ============================================================================
+// Scheduling Schemas
+// ============================================================================
+
+/** @type {import('zod').ZodEnum} */
+const ScheduledPostStatusSchema = z.enum(['pending', 'published', 'failed', 'cancelled']);
+
+/** @type {import('zod').ZodObject} */
+const ScheduledPostSchema = z.object({
+  id: z.string().uuid(),
+  commentary: z.string().min(1).max(3000),
+  url: z.string().url().nullable(),
+  visibility: VisibilitySchema,
+  scheduledTime: z.string().datetime(),
+  status: ScheduledPostStatusSchema,
+  createdAt: z.string().datetime(),
+  publishedAt: z.string().datetime().nullable(),
+  postUrn: PostURNSchema.nullable(),
+  errorMessage: z.string().nullable(),
+  retryCount: z.number().int().min(0)
+});
+
+// ============================================================================
 // MCP Tool Input Schemas
 // ============================================================================
 
@@ -201,6 +223,40 @@ const AddCommentInputSchema = z.object({
 const AddReactionInputSchema = z.object({
   postUrn: PostURNSchema,
   reactionType: ReactionTypeSchema
+});
+
+/** @type {import('zod').ZodObject} */
+const SchedulePostInputSchema = z.object({
+  commentary: z.string()
+    .min(1, 'Commentary cannot be empty')
+    .max(3000, 'Commentary must be 3000 characters or less'),
+  scheduledTime: z.string()
+    .datetime({ message: 'scheduledTime must be a valid ISO 8601 datetime' }),
+  url: z.string().url('Invalid URL format').optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+}).refine(
+  data => new Date(data.scheduledTime) > new Date(),
+  { message: 'scheduledTime must be in the future' }
+);
+
+/** @type {import('zod').ZodObject} */
+const ListScheduledPostsInputSchema = z.object({
+  status: ScheduledPostStatusSchema.optional(),
+  limit: z.number()
+    .int('Limit must be an integer')
+    .min(1, 'Limit must be at least 1')
+    .max(100, 'Limit cannot exceed 100')
+    .default(50)
+});
+
+/** @type {import('zod').ZodObject} */
+const CancelScheduledPostInputSchema = z.object({
+  postId: z.string().uuid('Invalid post ID format')
+});
+
+/** @type {import('zod').ZodObject} */
+const GetScheduledPostInputSchema = z.object({
+  postId: z.string().uuid('Invalid post ID format')
 });
 
 // ============================================================================
@@ -288,6 +344,35 @@ const GetUserInfoOutputSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   pictureUrl: z.string().url()
+});
+
+/** @type {import('zod').ZodObject} */
+const SchedulePostOutputSchema = z.object({
+  postId: z.string().uuid(),
+  scheduledTime: z.string().datetime(),
+  status: ScheduledPostStatusSchema,
+  message: z.string()
+});
+
+/** @type {import('zod').ZodObject} */
+const ListScheduledPostsOutputSchema = z.object({
+  posts: z.array(ScheduledPostSchema),
+  count: z.number().int().min(0),
+  message: z.string()
+});
+
+/** @type {import('zod').ZodObject} */
+const CancelScheduledPostOutputSchema = z.object({
+  postId: z.string().uuid(),
+  status: z.literal('cancelled'),
+  message: z.string(),
+  success: z.literal(true)
+});
+
+/** @type {import('zod').ZodObject} */
+const GetScheduledPostOutputSchema = z.object({
+  post: ScheduledPostSchema,
+  message: z.string()
 });
 
 // ============================================================================
@@ -390,6 +475,10 @@ module.exports = {
   CreatePostWithImageInputSchema,
   AddCommentInputSchema,
   AddReactionInputSchema,
+  SchedulePostInputSchema,
+  ListScheduledPostsInputSchema,
+  CancelScheduledPostInputSchema,
+  GetScheduledPostInputSchema,
 
   // MCP tool output schemas
   CreatePostOutputSchema,
@@ -403,6 +492,14 @@ module.exports = {
   RefreshTokenOutputSchema,
   AddCommentOutputSchema,
   AddReactionOutputSchema,
+  SchedulePostOutputSchema,
+  ListScheduledPostsOutputSchema,
+  CancelScheduledPostOutputSchema,
+  GetScheduledPostOutputSchema,
+
+  // Scheduling schemas
+  ScheduledPostStatusSchema,
+  ScheduledPostSchema,
 
   // Error schemas
   ErrorResponseSchema,
