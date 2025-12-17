@@ -162,6 +162,27 @@ const ExchangeCodeInputSchema = z.object({
   authorizationCode: z.string().min(1, 'Authorization code cannot be empty')
 });
 
+/** @type {import('zod').ZodObject} */
+const UpdatePostInputSchema = z.object({
+  postUrn: PostURNSchema,
+  commentary: z.string().min(1).max(3000).optional(),
+  contentCallToActionLabel: z.string().optional(),
+  contentLandingPage: z.string().url().optional()
+}).refine(
+  data => data.commentary || data.contentCallToActionLabel || data.contentLandingPage,
+  { message: 'At least one field to update is required' }
+);
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithImageInputSchema = z.object({
+  commentary: z.string()
+    .min(1, 'Commentary cannot be empty')
+    .max(3000, 'Commentary must be 3000 characters or less'),
+  imagePath: z.string().min(1, 'Image path cannot be empty'),
+  altText: z.string().max(300).optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+});
+
 // ============================================================================
 // MCP Tool Output Schemas
 // ============================================================================
@@ -186,6 +207,28 @@ const DeletePostOutputSchema = z.object({
   postUrn: PostURNSchema,
   message: z.string(),
   success: z.literal(true)
+});
+
+/** @type {import('zod').ZodObject} */
+const UpdatePostOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  message: z.string(),
+  success: z.literal(true)
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithImageOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  imageUrn: ImageURNSchema,
+  message: z.string(),
+  url: z.string().url()
+});
+
+/** @type {import('zod').ZodObject} */
+const RefreshTokenOutputSchema = z.object({
+  accessToken: z.string(),
+  expiresIn: z.number(),
+  message: z.string()
 });
 
 /** @type {import('zod').ZodObject} */
@@ -305,6 +348,8 @@ module.exports = {
   GetPostsInputSchema,
   DeletePostInputSchema,
   ExchangeCodeInputSchema,
+  UpdatePostInputSchema,
+  CreatePostWithImageInputSchema,
 
   // MCP tool output schemas
   CreatePostOutputSchema,
@@ -313,6 +358,9 @@ module.exports = {
   GetAuthUrlOutputSchema,
   ExchangeCodeOutputSchema,
   GetUserInfoOutputSchema,
+  UpdatePostOutputSchema,
+  CreatePostWithImageOutputSchema,
+  RefreshTokenOutputSchema,
 
   // Error schemas
   ErrorResponseSchema,

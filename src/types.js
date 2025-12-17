@@ -173,6 +173,24 @@
  */
 
 /**
+ * Input parameters for updating a post
+ * @typedef {Object} UpdatePostInput
+ * @property {PostURN} postUrn - URN of the post to update
+ * @property {string} [commentary] - New post text (1-3000 characters)
+ * @property {string} [contentCallToActionLabel] - New CTA label
+ * @property {string} [contentLandingPage] - New landing page URL
+ */
+
+/**
+ * Input parameters for creating a post with an image
+ * @typedef {Object} CreatePostWithImageInput
+ * @property {string} commentary - Post text (supports hashtags, mentions)
+ * @property {string} imagePath - Local file path to the image (PNG, JPG, GIF)
+ * @property {string} [altText] - Accessibility text for the image
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
  * Input parameters for exchanging OAuth code for token
  * @typedef {Object} ExchangeCodeInput
  * @property {string} authorizationCode - Code from OAuth callback
@@ -201,6 +219,31 @@
  * @property {PostURN} postUrn - URN of deleted post
  * @property {string} message - Success message
  * @property {boolean} success - Always true if no error
+ */
+
+/**
+ * Output from updating a post
+ * @typedef {Object} UpdatePostOutput
+ * @property {PostURN} postUrn - URN of updated post
+ * @property {string} message - Success message
+ * @property {boolean} success - Always true if no error
+ */
+
+/**
+ * Output from creating a post with image
+ * @typedef {Object} CreatePostWithImageOutput
+ * @property {PostURN} postUrn - URN of created post
+ * @property {ImageURN} imageUrn - URN of uploaded image
+ * @property {string} message - Success message
+ * @property {string} url - Link to view post on LinkedIn
+ */
+
+/**
+ * Output from refreshing an access token
+ * @typedef {Object} RefreshTokenOutput
+ * @property {string} accessToken - New access token
+ * @property {number} expiresIn - Seconds until expiry
+ * @property {string} message - Success message with save instructions
  */
 
 /**

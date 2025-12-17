@@ -5,6 +5,8 @@
 
 require('dotenv').config();
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const LinkedInAPI = require('./linkedin-api');
 const schemas = require('./schemas');
 

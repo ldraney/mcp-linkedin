@@ -200,6 +200,134 @@ class LinkedInAPI {
   }
 
   /**
+   * Update a post (partial update)
+   * @param {string} postUrn - Post URN to update
+   * @param {Object} updateData - Fields to update
+   * @param {string} [updateData.commentary] - New post text
+   * @param {string} [updateData.contentCallToActionLabel] - New CTA label
+   * @param {string} [updateData.contentLandingPage] - New landing page URL
+   * @returns {Promise<{statusCode: number}>}
+   */
+  async updatePost(postUrn, updateData) {
+    const encodedUrn = encodeURIComponent(postUrn);
+
+    // Build the $set object with only provided fields
+    const $set = {};
+    if (updateData.commentary !== undefined) {
+      $set.commentary = updateData.commentary;
+    }
+    if (updateData.contentCallToActionLabel !== undefined) {
+      $set.contentCallToActionLabel = updateData.contentCallToActionLabel;
+    }
+    if (updateData.contentLandingPage !== undefined) {
+      $set.contentLandingPage = updateData.contentLandingPage;
+    }
+
+    const response = await makeRequest({
+      method: 'POST',
+      path: `/rest/posts/${encodedUrn}`,
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0',
+        'X-RestLi-Method': 'PARTIAL_UPDATE'
+      },
+      body: {
+        patch: { $set }
+      }
+    });
+
+    return {
+      statusCode: response.statusCode
+    };
+  }
+
+  /**
+   * Initialize image upload to get upload URL
+   * @returns {Promise<{uploadUrl: string, imageUrn: string}>}
+   */
+  async initializeImageUpload() {
+    const response = await makeRequest({
+      method: 'POST',
+      path: '/rest/images?action=initializeUpload',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        initializeUploadRequest: {
+          owner: `urn:li:person:${this.personId}`
+        }
+      }
+    });
+
+    return {
+      uploadUrl: response.body.value.uploadUrl,
+      imageUrn: response.body.value.image
+    };
+  }
+
+  /**
+   * Upload image binary to LinkedIn
+   * @param {string} uploadUrl - URL from initializeImageUpload
+   * @param {Buffer} imageBuffer - Image binary data
+   * @param {string} contentType - MIME type (image/png, image/jpeg, image/gif)
+   * @returns {Promise<{statusCode: number}>}
+   */
+  async uploadImageBinary(uploadUrl, imageBuffer, contentType) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(uploadUrl);
+
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': contentType,
+          'Content-Length': imageBuffer.length
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ statusCode: res.statusCode });
+          } else {
+            const error = new Error(`Image upload failed: ${res.statusCode}`);
+            error.response = { statusCode: res.statusCode, body: data };
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(imageBuffer);
+      req.end();
+    });
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param {Object} params
+   * @param {string} params.refreshToken - Refresh token
+   * @param {string} params.clientId - OAuth client ID
+   * @param {string} params.clientSecret - OAuth client secret
+   * @returns {Promise<Object>} New token response
+   */
+  static async refreshAccessToken({ refreshToken, clientId, clientSecret }) {
+    return makeOAuthRequest('www.linkedin.com', '/oauth/v2/accessToken', {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret
+    });
+  }
+
+  /**
    * Get user info from userinfo endpoint
    * @returns {Promise<Object>} User information
    */
