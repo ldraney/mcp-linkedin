@@ -7,14 +7,14 @@ MCP server for LinkedIn post management via Claude Desktop.
 ```
 src/
   index.js       # MCP server entry point (stdio transport)
-  tools.js       # 10 tool implementations
+  tools.js       # 12 tool implementations
   linkedin-api.js # LinkedIn REST API client
   schemas.js     # Zod validation schemas
   types.js       # JSDoc type definitions
-__tests__/       # Jest test suite (39 tests)
+__tests__/       # Jest test suite (50 tests)
 ```
 
-## Current Tools (Phase 2 Complete)
+## Current Tools (Phase 2.5 Complete)
 
 | Tool | Description |
 |------|-------------|
@@ -24,6 +24,8 @@ __tests__/       # Jest test suite (39 tests)
 | `linkedin_get_my_posts` | Retrieve recent posts (paginated) |
 | `linkedin_update_post` | Edit existing posts (commentary, CTA, landing page) |
 | `linkedin_delete_post` | Delete by URN |
+| `linkedin_add_comment` | Add comment to a post |
+| `linkedin_add_reaction` | React to a post (LIKE, PRAISE, EMPATHY, etc.) |
 | `linkedin_get_auth_url` | Start OAuth flow |
 | `linkedin_exchange_code` | Complete OAuth |
 | `linkedin_refresh_token` | Refresh expired access token |
@@ -41,6 +43,8 @@ Key endpoints:
 - `GET /rest/posts?author={urn}&q=author` - Get posts
 - `DELETE /rest/posts/{urn}` - Delete post
 - `POST /rest/posts/{urn}` + `X-RestLi-Method: PARTIAL_UPDATE` - Update post
+- `POST /rest/socialActions/{postUrn}/comments` - Add comment
+- `POST /rest/reactions?actor={personUrn}` - Add reaction
 
 ## Environment Variables
 
@@ -58,7 +62,7 @@ Required in `.env`:
 
 ```bash
 npm start        # Start MCP server
-npm test         # Run tests (39 passing)
+npm test         # Run tests (50 passing)
 ```
 
 ## Roadmap
@@ -79,12 +83,13 @@ npm test         # Run tests (39 passing)
   - Uses refresh token from initial OAuth flow
   - Returns new access token with expiry info
 
-### Phase 2.5: Social Interactions (Next)
+### Phase 2.5: Social Interactions (COMPLETE)
 
-- [ ] **`linkedin_add_comment`** - Comment on posts
+- [x] **`linkedin_add_comment`** - Comment on posts
   - Endpoint: `POST /rest/socialActions/{postUrn}/comments`
+  - Max 1250 characters
 
-- [ ] **`linkedin_add_reaction`** - React to posts
+- [x] **`linkedin_add_reaction`** - React to posts
   - Endpoint: `POST /rest/reactions?actor={personUrn}`
   - Types: LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, ENTERTAINMENT
 

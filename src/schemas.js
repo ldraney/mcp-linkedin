@@ -27,6 +27,12 @@ const PostURNSchema = z.string().regex(/^urn:li:(share|ugcPost):.+$/, 'Invalid p
 /** @type {import('zod').ZodString} */
 const ImageURNSchema = z.string().regex(/^urn:li:image:.+$/, 'Invalid image URN format');
 
+/** @type {import('zod').ZodString} */
+const CommentURNSchema = z.string().regex(/^urn:li:comment:\(.+,.+\)$/, 'Invalid comment URN format');
+
+/** @type {import('zod').ZodEnum} */
+const ReactionTypeSchema = z.enum(['LIKE', 'PRAISE', 'EMPATHY', 'INTEREST', 'APPRECIATION', 'ENTERTAINMENT']);
+
 /** @type {import('zod').ZodObject} */
 const DistributionSchema = z.object({
   feedDistribution: FeedDistributionSchema,
@@ -183,6 +189,20 @@ const CreatePostWithImageInputSchema = z.object({
   visibility: VisibilitySchema.default('PUBLIC')
 });
 
+/** @type {import('zod').ZodObject} */
+const AddCommentInputSchema = z.object({
+  postUrn: PostURNSchema,
+  text: z.string()
+    .min(1, 'Comment text cannot be empty')
+    .max(1250, 'Comment must be 1250 characters or less')
+});
+
+/** @type {import('zod').ZodObject} */
+const AddReactionInputSchema = z.object({
+  postUrn: PostURNSchema,
+  reactionType: ReactionTypeSchema
+});
+
 // ============================================================================
 // MCP Tool Output Schemas
 // ============================================================================
@@ -229,6 +249,22 @@ const RefreshTokenOutputSchema = z.object({
   accessToken: z.string(),
   expiresIn: z.number(),
   message: z.string()
+});
+
+/** @type {import('zod').ZodObject} */
+const AddCommentOutputSchema = z.object({
+  commentUrn: CommentURNSchema,
+  postUrn: PostURNSchema,
+  message: z.string(),
+  success: z.literal(true)
+});
+
+/** @type {import('zod').ZodObject} */
+const AddReactionOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  reactionType: ReactionTypeSchema,
+  message: z.string(),
+  success: z.literal(true)
 });
 
 /** @type {import('zod').ZodObject} */
@@ -331,6 +367,8 @@ module.exports = {
   PersonURNSchema,
   PostURNSchema,
   ImageURNSchema,
+  CommentURNSchema,
+  ReactionTypeSchema,
   DistributionSchema,
   ArticleSchema,
   MediaSchema,
@@ -350,6 +388,8 @@ module.exports = {
   ExchangeCodeInputSchema,
   UpdatePostInputSchema,
   CreatePostWithImageInputSchema,
+  AddCommentInputSchema,
+  AddReactionInputSchema,
 
   // MCP tool output schemas
   CreatePostOutputSchema,
@@ -361,6 +401,8 @@ module.exports = {
   UpdatePostOutputSchema,
   CreatePostWithImageOutputSchema,
   RefreshTokenOutputSchema,
+  AddCommentOutputSchema,
+  AddReactionOutputSchema,
 
   // Error schemas
   ErrorResponseSchema,

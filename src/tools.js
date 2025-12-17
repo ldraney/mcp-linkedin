@@ -340,6 +340,46 @@ async function linkedin_refresh_token(input) {
   };
 }
 
+/**
+ * Add a comment to a LinkedIn post
+ * @param {import('./types').AddCommentInput} input
+ * @returns {Promise<import('./types').AddCommentOutput>}
+ */
+async function linkedin_add_comment(input) {
+  // Validate input
+  const validated = schemas.AddCommentInputSchema.parse(input);
+
+  const api = getAPIClient();
+  const result = await api.addComment(validated.postUrn, validated.text);
+
+  return {
+    commentUrn: result.commentUrn,
+    postUrn: validated.postUrn,
+    message: 'Comment added successfully',
+    success: true
+  };
+}
+
+/**
+ * Add a reaction to a LinkedIn post
+ * @param {import('./types').AddReactionInput} input
+ * @returns {Promise<import('./types').AddReactionOutput>}
+ */
+async function linkedin_add_reaction(input) {
+  // Validate input
+  const validated = schemas.AddReactionInputSchema.parse(input);
+
+  const api = getAPIClient();
+  await api.addReaction(validated.postUrn, validated.reactionType);
+
+  return {
+    postUrn: validated.postUrn,
+    reactionType: validated.reactionType,
+    message: `Reaction ${validated.reactionType} added successfully`,
+    success: true
+  };
+}
+
 module.exports = {
   linkedin_create_post,
   linkedin_create_post_with_link,
@@ -350,5 +390,7 @@ module.exports = {
   linkedin_get_user_info,
   linkedin_update_post,
   linkedin_create_post_with_image,
-  linkedin_refresh_token
+  linkedin_refresh_token,
+  linkedin_add_comment,
+  linkedin_add_reaction
 };

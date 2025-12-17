@@ -220,6 +220,43 @@ const TOOL_DEFINITIONS = [
       },
       required: ['refreshToken']
     }
+  },
+  {
+    name: 'linkedin_add_comment',
+    description: 'Add a comment to a LinkedIn post. Comments support up to 1250 characters.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        postUrn: {
+          type: 'string',
+          description: 'Post URN to comment on (e.g., "urn:li:share:123456" or "urn:li:ugcPost:789")'
+        },
+        text: {
+          type: 'string',
+          description: 'Comment text (max 1250 characters)'
+        }
+      },
+      required: ['postUrn', 'text']
+    }
+  },
+  {
+    name: 'linkedin_add_reaction',
+    description: 'Add a reaction to a LinkedIn post. Reaction types: LIKE (thumbs up), PRAISE (celebrate), EMPATHY (love), INTEREST (insightful), APPRECIATION (support), ENTERTAINMENT (funny).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        postUrn: {
+          type: 'string',
+          description: 'Post URN to react to (e.g., "urn:li:share:123456" or "urn:li:ugcPost:789")'
+        },
+        reactionType: {
+          type: 'string',
+          enum: ['LIKE', 'PRAISE', 'EMPATHY', 'INTEREST', 'APPRECIATION', 'ENTERTAINMENT'],
+          description: 'Type of reaction: LIKE (thumbs up), PRAISE (celebrate), EMPATHY (love), INTEREST (insightful), APPRECIATION (support), ENTERTAINMENT (funny)'
+        }
+      },
+      required: ['postUrn', 'reactionType']
+    }
   }
 ];
 
@@ -280,6 +317,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'linkedin_refresh_token':
         result = await tools.linkedin_refresh_token(args);
+        break;
+
+      case 'linkedin_add_comment':
+        result = await tools.linkedin_add_comment(args);
+        break;
+
+      case 'linkedin_add_reaction':
+        result = await tools.linkedin_add_reaction(args);
         break;
 
       default:

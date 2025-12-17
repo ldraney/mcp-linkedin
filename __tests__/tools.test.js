@@ -550,4 +550,149 @@ describe('LinkedIn MCP Tools - TDD', () => {
       await expect(tools.linkedin_refresh_token(input)).rejects.toThrow('Refresh token is required');
     });
   });
+
+  describe('linkedin_add_comment', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        postUrn: 'urn:li:share:123456',
+        text: 'Great post!'
+      };
+
+      const result = schemas.AddCommentInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid URN format', () => {
+      const invalidInput = {
+        postUrn: 'not-a-valid-urn',
+        text: 'Test comment'
+      };
+
+      const result = schemas.AddCommentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should accept ugcPost URN format', () => {
+      const input = {
+        postUrn: 'urn:li:ugcPost:7393762149422116864',
+        text: 'Nice!'
+      };
+
+      const result = schemas.AddCommentInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty comment text', () => {
+      const invalidInput = {
+        postUrn: 'urn:li:share:123456',
+        text: ''
+      };
+
+      const result = schemas.AddCommentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject comment text over 1250 characters', () => {
+      const invalidInput = {
+        postUrn: 'urn:li:share:123456',
+        text: 'a'.repeat(1251)
+      };
+
+      const result = schemas.AddCommentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return AddCommentOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.addComment = jest.fn().mockResolvedValue({
+        commentUrn: 'urn:li:comment:(urn:li:share:123456,789)',
+        statusCode: 201
+      });
+
+      const input = {
+        postUrn: 'urn:li:share:123456',
+        text: 'Great post!'
+      };
+
+      const result = await tools.linkedin_add_comment(input);
+
+      const validation = schemas.AddCommentOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result.commentUrn).toBe('urn:li:comment:(urn:li:share:123456,789)');
+      expect(result.postUrn).toBe(input.postUrn);
+      expect(result.success).toBe(true);
+      expect(result).toHaveProperty('message');
+    });
+  });
+
+  describe('linkedin_add_reaction', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        postUrn: 'urn:li:share:123456',
+        reactionType: 'LIKE'
+      };
+
+      const result = schemas.AddReactionInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid URN format', () => {
+      const invalidInput = {
+        postUrn: 'not-a-valid-urn',
+        reactionType: 'LIKE'
+      };
+
+      const result = schemas.AddReactionInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should accept all valid reaction types', () => {
+      const reactionTypes = ['LIKE', 'PRAISE', 'EMPATHY', 'INTEREST', 'APPRECIATION', 'ENTERTAINMENT'];
+
+      reactionTypes.forEach(reactionType => {
+        const input = {
+          postUrn: 'urn:li:share:123456',
+          reactionType
+        };
+
+        const result = schemas.AddReactionInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject invalid reaction type', () => {
+      const invalidInput = {
+        postUrn: 'urn:li:share:123456',
+        reactionType: 'INVALID_TYPE'
+      };
+
+      const result = schemas.AddReactionInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return AddReactionOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.addReaction = jest.fn().mockResolvedValue({
+        statusCode: 201
+      });
+
+      const input = {
+        postUrn: 'urn:li:share:123456',
+        reactionType: 'PRAISE'
+      };
+
+      const result = await tools.linkedin_add_reaction(input);
+
+      const validation = schemas.AddReactionOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result.postUrn).toBe(input.postUrn);
+      expect(result.reactionType).toBe('PRAISE');
+      expect(result.success).toBe(true);
+      expect(result).toHaveProperty('message');
+      expect(result.message).toContain('PRAISE');
+    });
+  });
 });

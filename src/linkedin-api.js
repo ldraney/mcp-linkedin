@@ -361,6 +361,65 @@ class LinkedInAPI {
       redirect_uri: redirectUri
     });
   }
+
+  /**
+   * Add a comment to a post
+   * @param {string} postUrn - Post URN to comment on
+   * @param {string} text - Comment text
+   * @returns {Promise<{commentUrn: string, statusCode: number}>}
+   */
+  async addComment(postUrn, text) {
+    const encodedUrn = encodeURIComponent(postUrn);
+
+    const response = await makeRequest({
+      method: 'POST',
+      path: `/rest/socialActions/${encodedUrn}/comments`,
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        actor: `urn:li:person:${this.personId}`,
+        message: {
+          text
+        }
+      }
+    });
+
+    return {
+      commentUrn: response.headers['x-restli-id'],
+      statusCode: response.statusCode
+    };
+  }
+
+  /**
+   * Add a reaction to a post
+   * @param {string} postUrn - Post URN to react to
+   * @param {string} reactionType - Type of reaction (LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, ENTERTAINMENT)
+   * @returns {Promise<{statusCode: number}>}
+   */
+  async addReaction(postUrn, reactionType) {
+    const actorUrn = encodeURIComponent(`urn:li:person:${this.personId}`);
+
+    const response = await makeRequest({
+      method: 'POST',
+      path: `/rest/reactions?actor=${actorUrn}`,
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        root: postUrn,
+        reactionType
+      }
+    });
+
+    return {
+      statusCode: response.statusCode
+    };
+  }
 }
 
 module.exports = LinkedInAPI;
