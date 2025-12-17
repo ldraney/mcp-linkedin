@@ -152,6 +152,74 @@ const TOOL_DEFINITIONS = [
       type: 'object',
       properties: {}
     }
+  },
+  {
+    name: 'linkedin_update_post',
+    description: 'Update an existing LinkedIn post. Can modify commentary, CTA label, or landing page URL.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        postUrn: {
+          type: 'string',
+          description: 'Post URN to update (e.g., "urn:li:share:123456")'
+        },
+        commentary: {
+          type: 'string',
+          description: 'New post text (max 3000 characters)'
+        },
+        contentCallToActionLabel: {
+          type: 'string',
+          description: 'New call-to-action label'
+        },
+        contentLandingPage: {
+          type: 'string',
+          description: 'New landing page URL'
+        }
+      },
+      required: ['postUrn']
+    }
+  },
+  {
+    name: 'linkedin_create_post_with_image',
+    description: 'Create a LinkedIn post with an uploaded image. Supports PNG, JPG, and GIF formats.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commentary: {
+          type: 'string',
+          description: 'Post text content (max 3000 characters)'
+        },
+        imagePath: {
+          type: 'string',
+          description: 'Local file path to the image (PNG, JPG, or GIF)'
+        },
+        altText: {
+          type: 'string',
+          description: 'Accessibility text for the image (max 300 characters)'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the post'
+        }
+      },
+      required: ['commentary', 'imagePath']
+    }
+  },
+  {
+    name: 'linkedin_refresh_token',
+    description: 'Refresh an expired access token using a refresh token. LinkedIn tokens expire after 60 days.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        refreshToken: {
+          type: 'string',
+          description: 'The refresh token obtained during initial OAuth flow'
+        }
+      },
+      required: ['refreshToken']
+    }
   }
 ];
 
@@ -200,6 +268,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'linkedin_get_user_info':
         result = await tools.linkedin_get_user_info();
+        break;
+
+      case 'linkedin_update_post':
+        result = await tools.linkedin_update_post(args);
+        break;
+
+      case 'linkedin_create_post_with_image':
+        result = await tools.linkedin_create_post_with_image(args);
+        break;
+
+      case 'linkedin_refresh_token':
+        result = await tools.linkedin_refresh_token(args);
         break;
 
       default:

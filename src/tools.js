@@ -216,6 +216,130 @@ async function linkedin_get_user_info() {
   };
 }
 
+/**
+ * Update an existing LinkedIn post
+ * @param {import('./types').UpdatePostInput} input
+ * @returns {Promise<import('./types').UpdatePostOutput>}
+ */
+async function linkedin_update_post(input) {
+  // Validate input
+  const validated = schemas.UpdatePostInputSchema.parse(input);
+
+  const api = getAPIClient();
+
+  const updateData = {};
+  if (validated.commentary) {
+    updateData.commentary = validated.commentary;
+  }
+  if (validated.contentCallToActionLabel) {
+    updateData.contentCallToActionLabel = validated.contentCallToActionLabel;
+  }
+  if (validated.contentLandingPage) {
+    updateData.contentLandingPage = validated.contentLandingPage;
+  }
+
+  await api.updatePost(validated.postUrn, updateData);
+
+  return {
+    postUrn: validated.postUrn,
+    message: 'Post updated successfully',
+    success: true
+  };
+}
+
+/**
+ * Get MIME type from file extension
+ * @param {string} filePath - Path to the file
+ * @returns {string} MIME type
+ */
+function getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif'
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * Create a post with an uploaded image
+ * @param {import('./types').CreatePostWithImageInput} input
+ * @returns {Promise<import('./types').CreatePostWithImageOutput>}
+ */
+async function linkedin_create_post_with_image(input) {
+  // Validate input
+  const validated = schemas.CreatePostWithImageInputSchema.parse(input);
+
+  // Verify file exists and is readable
+  if (!fs.existsSync(validated.imagePath)) {
+    throw new Error(`Image file not found: ${validated.imagePath}`);
+  }
+
+  const api = getAPIClient();
+
+  // Step 1: Initialize upload to get upload URL
+  const { uploadUrl, imageUrn } = await api.initializeImageUpload();
+
+  // Step 2: Read image and upload binary
+  const imageBuffer = fs.readFileSync(validated.imagePath);
+  const contentType = getMimeType(validated.imagePath);
+  await api.uploadImageBinary(uploadUrl, imageBuffer, contentType);
+
+  // Step 3: Create post with the uploaded image
+  const postData = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+    commentary: validated.commentary,
+    visibility: validated.visibility,
+    distribution: {
+      feedDistribution: 'MAIN_FEED'
+    },
+    content: {
+      media: {
+        id: imageUrn,
+        ...(validated.altText && { altText: validated.altText })
+      }
+    },
+    lifecycleState: 'PUBLISHED'
+  };
+
+  const result = await api.createPost(postData);
+
+  return {
+    postUrn: result.postUrn,
+    imageUrn: imageUrn,
+    message: 'Post with image created successfully',
+    url: `https://www.linkedin.com/feed/update/${result.postUrn}`
+  };
+}
+
+/**
+ * Refresh an expired access token using a refresh token
+ * @param {Object} input
+ * @param {string} input.refreshToken - The refresh token
+ * @returns {Promise<import('./types').RefreshTokenOutput>}
+ */
+async function linkedin_refresh_token(input) {
+  const { refreshToken } = input;
+
+  if (!refreshToken) {
+    throw new Error('Refresh token is required');
+  }
+
+  const tokenResponse = await LinkedInAPI.refreshAccessToken({
+    refreshToken,
+    clientId: process.env.LINKEDIN_CLIENT_ID,
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET
+  });
+
+  return {
+    accessToken: tokenResponse.access_token,
+    expiresIn: tokenResponse.expires_in,
+    message: `Token refreshed! Expires in ${Math.floor(tokenResponse.expires_in / 86400)} days.\nUpdate your .env:\nLINKEDIN_ACCESS_TOKEN=${tokenResponse.access_token}`
+  };
+}
+
 module.exports = {
   linkedin_create_post,
   linkedin_create_post_with_link,
@@ -223,5 +347,8 @@ module.exports = {
   linkedin_delete_post,
   linkedin_get_auth_url,
   linkedin_exchange_code,
-  linkedin_get_user_info
+  linkedin_get_user_info,
+  linkedin_update_post,
+  linkedin_create_post_with_image,
+  linkedin_refresh_token
 };

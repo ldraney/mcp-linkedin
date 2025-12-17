@@ -7,23 +7,26 @@ MCP server for LinkedIn post management via Claude Desktop.
 ```
 src/
   index.js       # MCP server entry point (stdio transport)
-  tools.js       # 7 tool implementations
+  tools.js       # 10 tool implementations
   linkedin-api.js # LinkedIn REST API client
   schemas.js     # Zod validation schemas
   types.js       # JSDoc type definitions
-__tests__/       # Jest test suite (24 tests)
+__tests__/       # Jest test suite (39 tests)
 ```
 
-## Current Tools (MVP Complete)
+## Current Tools (Phase 2 Complete)
 
 | Tool | Description |
 |------|-------------|
 | `linkedin_create_post` | Create text posts |
 | `linkedin_create_post_with_link` | Posts with article/link preview |
+| `linkedin_create_post_with_image` | Upload image + create post |
 | `linkedin_get_my_posts` | Retrieve recent posts (paginated) |
+| `linkedin_update_post` | Edit existing posts (commentary, CTA, landing page) |
 | `linkedin_delete_post` | Delete by URN |
 | `linkedin_get_auth_url` | Start OAuth flow |
 | `linkedin_exchange_code` | Complete OAuth |
+| `linkedin_refresh_token` | Refresh expired access token |
 | `linkedin_get_user_info` | Get profile info |
 
 ## LinkedIn API
@@ -55,22 +58,28 @@ Required in `.env`:
 
 ```bash
 npm start        # Start MCP server
-npm test         # Run tests (24 passing)
+npm test         # Run tests (39 passing)
 ```
 
 ## Roadmap
 
-### Phase 2: Content Management (Next)
+### Phase 2: Content Management (COMPLETE)
 
-- [ ] **`linkedin_update_post`** - Edit existing posts
+- [x] **`linkedin_update_post`** - Edit existing posts
   - Endpoint: `POST /rest/posts/{urn}` with `X-RestLi-Method: PARTIAL_UPDATE`
   - Body: `{ "patch": { "$set": { "commentary": "new text" } } }`
   - Updatable: commentary, contentCallToActionLabel, contentLandingPage
 
-- [ ] **`linkedin_create_post_with_image`** - Upload + post images
+- [x] **`linkedin_create_post_with_image`** - Upload + post images
   - Requires: Images API upload first to get `urn:li:image:{id}`
   - Then: Create post with `content.media.id`
   - Supported: PNG, JPG, GIF
+
+- [x] **`linkedin_refresh_token`** - Refresh expired access tokens
+  - Uses refresh token from initial OAuth flow
+  - Returns new access token with expiry info
+
+### Phase 2.5: Social Interactions (Next)
 
 - [ ] **`linkedin_add_comment`** - Comment on posts
   - Endpoint: `POST /rest/socialActions/{postUrn}/comments`
@@ -78,8 +87,6 @@ npm test         # Run tests (24 passing)
 - [ ] **`linkedin_add_reaction`** - React to posts
   - Endpoint: `POST /rest/reactions?actor={personUrn}`
   - Types: LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, ENTERTAINMENT
-
-- [ ] **Token refresh automation** - Handle 60-day expiry
 
 ### Phase 3: Scheduling (Custom Implementation)
 

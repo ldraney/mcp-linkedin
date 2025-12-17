@@ -370,4 +370,184 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result.personUrn).toMatch(/^urn:li:person:.+$/);
     });
   });
+
+  describe('linkedin_update_post', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        postUrn: 'urn:li:share:123456',
+        commentary: 'Updated post text'
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid URN format', () => {
+      const invalidInput = {
+        postUrn: 'not-a-valid-urn',
+        commentary: 'Test'
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should require at least one field to update', () => {
+      const invalidInput = {
+        postUrn: 'urn:li:share:123456'
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('At least one field');
+    });
+
+    it('should accept only commentary update', () => {
+      const input = {
+        postUrn: 'urn:li:share:123456',
+        commentary: 'New text'
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept only contentLandingPage update', () => {
+      const input = {
+        postUrn: 'urn:li:share:123456',
+        contentLandingPage: 'https://example.com/new-page'
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject commentary over 3000 characters', () => {
+      const invalidInput = {
+        postUrn: 'urn:li:share:123456',
+        commentary: 'a'.repeat(3001)
+      };
+
+      const result = schemas.UpdatePostInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should return UpdatePostOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.updatePost = jest.fn().mockResolvedValue({
+        statusCode: 200
+      });
+
+      const input = {
+        postUrn: 'urn:li:share:123456',
+        commentary: 'Updated post text'
+      };
+
+      const result = await tools.linkedin_update_post(input);
+
+      const validation = schemas.UpdatePostOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result.postUrn).toBe(input.postUrn);
+      expect(result.success).toBe(true);
+      expect(result).toHaveProperty('message');
+    });
+  });
+
+  describe('linkedin_create_post_with_image', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        commentary: 'Check out this image!',
+        imagePath: '/path/to/image.png',
+        altText: 'A beautiful image',
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.CreatePostWithImageInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty commentary', () => {
+      const invalidInput = {
+        commentary: '',
+        imagePath: '/path/to/image.png'
+      };
+
+      const result = schemas.CreatePostWithImageInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject empty imagePath', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        imagePath: ''
+      };
+
+      const result = schemas.CreatePostWithImageInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        commentary: 'Test',
+        imagePath: '/path/to/image.jpg'
+      };
+      const parsed = schemas.CreatePostWithImageInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should allow optional altText', () => {
+      const input = {
+        commentary: 'Test',
+        imagePath: '/path/to/image.png'
+      };
+
+      const parsed = schemas.CreatePostWithImageInputSchema.parse(input);
+      expect(parsed.altText).toBeUndefined();
+    });
+
+    it('should reject altText over 300 characters', () => {
+      const invalidInput = {
+        commentary: 'Test',
+        imagePath: '/path/to/image.png',
+        altText: 'a'.repeat(301)
+      };
+
+      const result = schemas.CreatePostWithImageInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('linkedin_refresh_token', () => {
+    it('should return RefreshTokenOutput on success', async () => {
+      // Mock static method
+      LinkedInAPI.refreshAccessToken = jest.fn().mockResolvedValue({
+        access_token: 'new_access_token',
+        expires_in: 5184000,
+        scope: 'openid profile email w_member_social',
+        token_type: 'Bearer'
+      });
+
+      const input = {
+        refreshToken: 'test_refresh_token'
+      };
+
+      const result = await tools.linkedin_refresh_token(input);
+
+      const validation = schemas.RefreshTokenOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('expiresIn');
+      expect(result).toHaveProperty('message');
+      expect(result.accessToken).toBe('new_access_token');
+    });
+
+    it('should throw error when refresh token is missing', async () => {
+      const input = {};
+
+      await expect(tools.linkedin_refresh_token(input)).rejects.toThrow('Refresh token is required');
+    });
+  });
 });
