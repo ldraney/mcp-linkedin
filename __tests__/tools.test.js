@@ -1046,4 +1046,571 @@ describe('LinkedIn MCP Tools - TDD', () => {
         .rejects.toThrow('Scheduled post not found');
     });
   });
+
+  // ============================================================================
+  // Rich Media Tools Tests
+  // ============================================================================
+
+  describe('linkedin_create_poll', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        question: 'What is your favorite programming language?',
+        options: [
+          { text: 'JavaScript' },
+          { text: 'Python' },
+          { text: 'Rust' },
+          { text: 'Go' }
+        ],
+        duration: 'THREE_DAYS',
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty question', () => {
+      const invalidInput = {
+        question: '',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject question over 140 characters', () => {
+      const invalidInput = {
+        question: 'a'.repeat(141),
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('140 characters');
+    });
+
+    it('should reject fewer than 2 options', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [{ text: 'Only one' }]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('at least 2');
+    });
+
+    it('should reject more than 4 options', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [
+          { text: 'Option 1' },
+          { text: 'Option 2' },
+          { text: 'Option 3' },
+          { text: 'Option 4' },
+          { text: 'Option 5' }
+        ]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('more than 4');
+    });
+
+    it('should reject option text over 30 characters', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [
+          { text: 'a'.repeat(31) },
+          { text: 'Valid option' }
+        ]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('30 characters');
+    });
+
+    it('should reject empty option text', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [
+          { text: '' },
+          { text: 'Valid option' }
+        ]
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should use THREE_DAYS as default duration', () => {
+      const input = {
+        question: 'Test question?',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }]
+      };
+      const parsed = schemas.CreatePollInputSchema.parse(input);
+      expect(parsed.duration).toBe('THREE_DAYS');
+    });
+
+    it('should accept all valid duration values', () => {
+      const durations = ['ONE_DAY', 'THREE_DAYS', 'SEVEN_DAYS', 'FOURTEEN_DAYS'];
+
+      durations.forEach(duration => {
+        const input = {
+          question: 'Test question?',
+          options: [{ text: 'Option 1' }, { text: 'Option 2' }],
+          duration
+        };
+        const result = schemas.CreatePollInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject invalid duration value', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }],
+        duration: 'INVALID_DURATION'
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should allow optional commentary', () => {
+      const input = {
+        question: 'Test question?',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }],
+        commentary: 'Check out this poll!'
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject commentary over 3000 characters', () => {
+      const invalidInput = {
+        question: 'Test question?',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }],
+        commentary: 'a'.repeat(3001)
+      };
+
+      const result = schemas.CreatePollInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        question: 'Test question?',
+        options: [{ text: 'Option 1' }, { text: 'Option 2' }]
+      };
+      const parsed = schemas.CreatePollInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should return CreatePollOutput on success', async () => {
+      // Mock API response
+      LinkedInAPI.prototype.createPost = jest.fn().mockResolvedValue({
+        postUrn: 'urn:li:ugcPost:7123456789012345678',
+        statusCode: 201
+      });
+
+      const input = {
+        question: 'What is your favorite language?',
+        options: [
+          { text: 'JavaScript' },
+          { text: 'Python' },
+          { text: 'Rust' }
+        ],
+        duration: 'SEVEN_DAYS',
+        commentary: 'Let me know!',
+        visibility: 'PUBLIC'
+      };
+
+      const result = await tools.linkedin_create_poll(input);
+
+      const validation = schemas.CreatePollOutputSchema.safeParse(result);
+      expect(validation.success).toBe(true);
+
+      expect(result).toHaveProperty('postUrn');
+      expect(result).toHaveProperty('message');
+      expect(result).toHaveProperty('url');
+      expect(result).toHaveProperty('pollQuestion');
+      expect(result).toHaveProperty('optionCount');
+      expect(result).toHaveProperty('duration');
+      expect(result.postUrn).toMatch(/^urn:li:(share|ugcPost):.+$/);
+      expect(result.pollQuestion).toBe(input.question);
+      expect(result.optionCount).toBe(3);
+      expect(result.duration).toBe('SEVEN_DAYS');
+    });
+
+    it('should call API with correct poll structure', async () => {
+      const mockCreatePost = jest.fn().mockResolvedValue({
+        postUrn: 'urn:li:ugcPost:7123456789012345678',
+        statusCode: 201
+      });
+      LinkedInAPI.prototype.createPost = mockCreatePost;
+
+      const input = {
+        question: 'Favorite color?',
+        options: [
+          { text: 'Red' },
+          { text: 'Blue' }
+        ],
+        duration: 'ONE_DAY'
+      };
+
+      await tools.linkedin_create_poll(input);
+
+      expect(mockCreatePost).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.objectContaining({
+            poll: expect.objectContaining({
+              question: 'Favorite color?',
+              options: [{ text: 'Red' }, { text: 'Blue' }],
+              settings: expect.objectContaining({
+                duration: 'ONE_DAY',
+                voteSelectionType: 'SINGLE_VOTE',
+                isVoterVisibleToAuthor: true
+              })
+            })
+          })
+        })
+      );
+    });
+  });
+
+  describe('linkedin_create_post_with_document', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        commentary: 'Check out my presentation!',
+        documentPath: '/path/to/document.pdf',
+        title: 'My Presentation',
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty commentary', () => {
+      const invalidInput = {
+        commentary: '',
+        documentPath: '/path/to/document.pdf'
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject commentary over 3000 characters', () => {
+      const invalidInput = {
+        commentary: 'a'.repeat(3001),
+        documentPath: '/path/to/document.pdf'
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty documentPath', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        documentPath: ''
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should allow optional title', () => {
+      const input = {
+        commentary: 'Check out this doc!',
+        documentPath: '/path/to/document.pdf'
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      expect(result.data.title).toBeUndefined();
+    });
+
+    it('should reject title over 400 characters', () => {
+      const invalidInput = {
+        commentary: 'Test',
+        documentPath: '/path/to/document.pdf',
+        title: 'a'.repeat(401)
+      };
+
+      const result = schemas.CreatePostWithDocumentInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('400 characters');
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        commentary: 'Test',
+        documentPath: '/path/to/document.pdf'
+      };
+      const parsed = schemas.CreatePostWithDocumentInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should validate document URN format', () => {
+      const validUrn = 'urn:li:document:C5F10AQGKQg_6y2a4sQ';
+      const result = schemas.DocumentURNSchema.safeParse(validUrn);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid document URN format', () => {
+      const invalidUrn = 'urn:li:image:C5F10AQGKQg_6y2a4sQ';
+      const result = schemas.DocumentURNSchema.safeParse(invalidUrn);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate CreatePostWithDocumentOutputSchema', () => {
+      const validOutput = {
+        postUrn: 'urn:li:share:123456789',
+        documentUrn: 'urn:li:document:C5F10AQGKQg_6y2a4sQ',
+        message: 'Post with document created successfully',
+        url: 'https://www.linkedin.com/feed/update/urn:li:share:123456789'
+      };
+
+      const result = schemas.CreatePostWithDocumentOutputSchema.safeParse(validOutput);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('linkedin_create_post_with_video', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        commentary: 'Check out my video!',
+        videoPath: '/path/to/video.mp4',
+        title: 'My Video',
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty commentary', () => {
+      const invalidInput = {
+        commentary: '',
+        videoPath: '/path/to/video.mp4'
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject commentary over 3000 characters', () => {
+      const invalidInput = {
+        commentary: 'a'.repeat(3001),
+        videoPath: '/path/to/video.mp4'
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty videoPath', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        videoPath: ''
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should allow optional title', () => {
+      const input = {
+        commentary: 'Check out this video!',
+        videoPath: '/path/to/video.mp4'
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      expect(result.data.title).toBeUndefined();
+    });
+
+    it('should reject title over 400 characters', () => {
+      const invalidInput = {
+        commentary: 'Test',
+        videoPath: '/path/to/video.mp4',
+        title: 'a'.repeat(401)
+      };
+
+      const result = schemas.CreatePostWithVideoInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('400 characters');
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        commentary: 'Test',
+        videoPath: '/path/to/video.mp4'
+      };
+      const parsed = schemas.CreatePostWithVideoInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should validate video URN format', () => {
+      const validUrn = 'urn:li:video:C5F10AQGKQg_6y2a4sQ';
+      const result = schemas.VideoURNSchema.safeParse(validUrn);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid video URN format', () => {
+      const invalidUrn = 'urn:li:image:C5F10AQGKQg_6y2a4sQ';
+      const result = schemas.VideoURNSchema.safeParse(invalidUrn);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate CreatePostWithVideoOutputSchema', () => {
+      const validOutput = {
+        postUrn: 'urn:li:share:123456789',
+        videoUrn: 'urn:li:video:C5F10AQGKQg_6y2a4sQ',
+        message: 'Post with video created successfully',
+        url: 'https://www.linkedin.com/feed/update/urn:li:share:123456789'
+      };
+
+      const result = schemas.CreatePostWithVideoOutputSchema.safeParse(validOutput);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('linkedin_create_post_with_multi_images', () => {
+    it('should validate input with Zod schema', () => {
+      const validInput = {
+        commentary: 'Check out these images!',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg'],
+        altTexts: ['Image 1 description', 'Image 2 description'],
+        visibility: 'PUBLIC'
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(validInput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject empty commentary', () => {
+      const invalidInput = {
+        commentary: '',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('cannot be empty');
+    });
+
+    it('should reject commentary over 3000 characters', () => {
+      const invalidInput = {
+        commentary: 'a'.repeat(3001),
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject fewer than 2 images', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        imagePaths: ['/path/to/image1.png']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('at least 2');
+    });
+
+    it('should reject more than 20 images', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        imagePaths: Array(21).fill('/path/to/image.png')
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0].message).toContain('more than 20');
+    });
+
+    it('should reject empty image path in array', () => {
+      const invalidInput = {
+        commentary: 'Test post',
+        imagePaths: ['/path/to/image1.png', '']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should allow optional altTexts', () => {
+      const input = {
+        commentary: 'Check out these images!',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+      expect(result.data.altTexts).toBeUndefined();
+    });
+
+    it('should reject altText over 300 characters', () => {
+      const invalidInput = {
+        commentary: 'Test',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg'],
+        altTexts: ['a'.repeat(301), 'Valid alt text']
+      };
+
+      const result = schemas.CreatePostWithMultiImagesInputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
+    });
+
+    it('should use PUBLIC as default visibility', () => {
+      const input = {
+        commentary: 'Test',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg']
+      };
+      const parsed = schemas.CreatePostWithMultiImagesInputSchema.parse(input);
+      expect(parsed.visibility).toBe('PUBLIC');
+    });
+
+    it('should validate CreatePostWithMultiImagesOutputSchema', () => {
+      const validOutput = {
+        postUrn: 'urn:li:share:123456789',
+        imageUrns: ['urn:li:image:C5F10AQGKQg_6y2a4sQ', 'urn:li:image:D6G20BRHRh_7z3b5tR'],
+        message: 'Post with 2 images created successfully',
+        url: 'https://www.linkedin.com/feed/update/urn:li:share:123456789'
+      };
+
+      const result = schemas.CreatePostWithMultiImagesOutputSchema.safeParse(validOutput);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept 2 to 20 images', () => {
+      // Test with 2 images (minimum)
+      const minInput = {
+        commentary: 'Test',
+        imagePaths: ['/path/to/image1.png', '/path/to/image2.jpg']
+      };
+      const minResult = schemas.CreatePostWithMultiImagesInputSchema.safeParse(minInput);
+      expect(minResult.success).toBe(true);
+
+      // Test with 20 images (maximum)
+      const maxInput = {
+        commentary: 'Test',
+        imagePaths: Array(20).fill('/path/to/image.png')
+      };
+      const maxResult = schemas.CreatePostWithMultiImagesInputSchema.safeParse(maxInput);
+      expect(maxResult.success).toBe(true);
+    });
+  });
 });

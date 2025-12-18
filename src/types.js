@@ -359,6 +359,120 @@
  */
 
 // ============================================================================
+// Poll Types
+// ============================================================================
+
+/**
+ * Duration options for a poll
+ * @typedef {'ONE_DAY' | 'THREE_DAYS' | 'SEVEN_DAYS' | 'FOURTEEN_DAYS'} PollDuration
+ */
+
+/**
+ * A single poll option
+ * @typedef {Object} PollOption
+ * @property {string} text - Option text (max 30 characters)
+ */
+
+/**
+ * Input parameters for creating a poll post
+ * @typedef {Object} CreatePollInput
+ * @property {string} question - Poll question (max 140 characters)
+ * @property {Array<PollOption>} options - Poll options (2-4 options)
+ * @property {PollDuration} [duration='THREE_DAYS'] - How long the poll runs
+ * @property {string} [commentary] - Optional post text (max 3000 characters)
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
+ * Output from creating a poll post
+ * @typedef {Object} CreatePollOutput
+ * @property {PostURN} postUrn - URN of created post
+ * @property {string} message - Success message
+ * @property {string} url - Link to view poll on LinkedIn
+ * @property {string} pollQuestion - The poll question
+ * @property {number} optionCount - Number of poll options
+ * @property {PollDuration} duration - Poll duration
+ */
+
+// ============================================================================
+// Document Types
+// ============================================================================
+
+/**
+ * LinkedIn URN for a document
+ * Format: "urn:li:document:{id}"
+ * @typedef {string} DocumentURN
+ */
+
+/**
+ * Input parameters for creating a post with a document
+ * @typedef {Object} CreatePostWithDocumentInput
+ * @property {string} commentary - Post text (max 3000 characters)
+ * @property {string} documentPath - Local file path to the document (PDF, DOC, DOCX, PPT, PPTX)
+ * @property {string} [title] - Custom title for the document (max 400 characters)
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
+ * Output from creating a post with document
+ * @typedef {Object} CreatePostWithDocumentOutput
+ * @property {PostURN} postUrn - URN of created post
+ * @property {DocumentURN} documentUrn - URN of uploaded document
+ * @property {string} message - Success message
+ * @property {string} url - Link to view post on LinkedIn
+ */
+
+// ============================================================================
+// Video Types
+// ============================================================================
+
+/**
+ * LinkedIn URN for a video
+ * Format: "urn:li:video:{id}"
+ * @typedef {string} VideoURN
+ */
+
+/**
+ * Input parameters for creating a post with a video
+ * @typedef {Object} CreatePostWithVideoInput
+ * @property {string} commentary - Post text (max 3000 characters)
+ * @property {string} videoPath - Local file path to the video (MP4, MOV, AVI, etc.)
+ * @property {string} [title] - Custom title for the video (max 400 characters)
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
+ * Output from creating a post with video
+ * @typedef {Object} CreatePostWithVideoOutput
+ * @property {PostURN} postUrn - URN of created post
+ * @property {VideoURN} videoUrn - URN of uploaded video
+ * @property {string} message - Success message
+ * @property {string} url - Link to view post on LinkedIn
+ */
+
+// ============================================================================
+// Multi-Image Types
+// ============================================================================
+
+/**
+ * Input parameters for creating a post with multiple images
+ * @typedef {Object} CreatePostWithMultiImagesInput
+ * @property {string} commentary - Post text (max 3000 characters)
+ * @property {Array<string>} imagePaths - Array of local file paths to images (2-20 images)
+ * @property {Array<string>} [altTexts] - Optional accessibility texts for each image
+ * @property {Visibility} [visibility='PUBLIC'] - Who can see the post
+ */
+
+/**
+ * Output from creating a post with multiple images
+ * @typedef {Object} CreatePostWithMultiImagesOutput
+ * @property {PostURN} postUrn - URN of created post
+ * @property {Array<ImageURN>} imageUrns - URNs of uploaded images
+ * @property {string} message - Success message
+ * @property {string} url - Link to view post on LinkedIn
+ */
+
+// ============================================================================
 // Error Types
 // ============================================================================
 

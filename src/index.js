@@ -335,6 +335,145 @@ const TOOL_DEFINITIONS = [
       },
       required: ['postId']
     }
+  },
+  // Rich media tools
+  {
+    name: 'linkedin_create_poll',
+    description: 'Create a LinkedIn poll post to engage your audience. Polls can have 2-4 options and run for 1 day, 3 days, 1 week, or 2 weeks.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        question: {
+          type: 'string',
+          description: 'The poll question (max 140 characters)'
+        },
+        options: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              text: {
+                type: 'string',
+                description: 'Option text (max 30 characters)'
+              }
+            },
+            required: ['text']
+          },
+          minItems: 2,
+          maxItems: 4,
+          description: 'Poll options (2-4 choices, each max 30 characters)'
+        },
+        duration: {
+          type: 'string',
+          enum: ['ONE_DAY', 'THREE_DAYS', 'SEVEN_DAYS', 'FOURTEEN_DAYS'],
+          default: 'THREE_DAYS',
+          description: 'How long the poll runs: ONE_DAY (1 day), THREE_DAYS (3 days), SEVEN_DAYS (1 week), FOURTEEN_DAYS (2 weeks)'
+        },
+        commentary: {
+          type: 'string',
+          description: 'Optional post text to accompany the poll (max 3000 characters)'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the poll'
+        }
+      },
+      required: ['question', 'options']
+    }
+  },
+  {
+    name: 'linkedin_create_post_with_document',
+    description: 'Create a LinkedIn post with an uploaded document (PDF, PPT, DOC). Great for sharing presentations, reports, and documents. Max file size: 100 MB, max pages: 300.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commentary: {
+          type: 'string',
+          description: 'Post text content (max 3000 characters)'
+        },
+        documentPath: {
+          type: 'string',
+          description: 'Local file path to the document (PDF, DOC, DOCX, PPT, PPTX)'
+        },
+        title: {
+          type: 'string',
+          description: 'Custom title for the document (max 400 characters). Defaults to filename if not provided.'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the post'
+        }
+      },
+      required: ['commentary', 'documentPath']
+    }
+  },
+  {
+    name: 'linkedin_create_post_with_video',
+    description: 'Create a LinkedIn post with an uploaded video. Supports MP4, MOV, AVI, WMV, WebM, MKV formats. Max file size: 200 MB for personal accounts.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commentary: {
+          type: 'string',
+          description: 'Post text content (max 3000 characters)'
+        },
+        videoPath: {
+          type: 'string',
+          description: 'Local file path to the video (MP4, MOV, AVI, WMV, WebM, MKV, M4V, FLV)'
+        },
+        title: {
+          type: 'string',
+          description: 'Custom title for the video (max 400 characters). Defaults to filename if not provided.'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the post'
+        }
+      },
+      required: ['commentary', 'videoPath']
+    }
+  },
+  {
+    name: 'linkedin_create_post_with_multi_images',
+    description: 'Create a LinkedIn post with multiple images (2-20 images). Great for sharing photo albums, step-by-step tutorials, or before/after comparisons.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        commentary: {
+          type: 'string',
+          description: 'Post text content (max 3000 characters)'
+        },
+        imagePaths: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          minItems: 2,
+          maxItems: 20,
+          description: 'Array of local file paths to images (2-20 images, PNG, JPG, or GIF)'
+        },
+        altTexts: {
+          type: 'array',
+          items: {
+            type: 'string'
+          },
+          description: 'Optional array of accessibility text for each image (max 300 characters each)'
+        },
+        visibility: {
+          type: 'string',
+          enum: ['PUBLIC', 'CONNECTIONS', 'LOGGED_IN', 'CONTAINER'],
+          default: 'PUBLIC',
+          description: 'Who can see the post'
+        }
+      },
+      required: ['commentary', 'imagePaths']
+    }
   }
 ];
 
@@ -420,6 +559,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'linkedin_get_scheduled_post':
         result = await tools.linkedin_get_scheduled_post(args);
+        break;
+
+      // Rich media tools
+      case 'linkedin_create_poll':
+        result = await tools.linkedin_create_poll(args);
+        break;
+
+      case 'linkedin_create_post_with_document':
+        result = await tools.linkedin_create_post_with_document(args);
+        break;
+
+      case 'linkedin_create_post_with_video':
+        result = await tools.linkedin_create_post_with_video(args);
+        break;
+
+      case 'linkedin_create_post_with_multi_images':
+        result = await tools.linkedin_create_post_with_multi_images(args);
         break;
 
       default:

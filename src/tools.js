@@ -265,6 +265,76 @@ function getMimeType(filePath) {
 }
 
 /**
+ * Get MIME type for documents
+ * @param {string} filePath - Path to the document
+ * @returns {string} MIME type
+ */
+function getDocumentMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * Get MIME type for videos
+ * @param {string} filePath - Path to the video
+ * @returns {string} MIME type
+ */
+function getVideoMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.avi': 'video/x-msvideo',
+    '.wmv': 'video/x-ms-wmv',
+    '.webm': 'video/webm',
+    '.mkv': 'video/x-matroska',
+    '.m4v': 'video/x-m4v',
+    '.flv': 'video/x-flv'
+  };
+  return mimeTypes[ext] || 'video/mp4';
+}
+
+/**
+ * Validate video file extension
+ * @param {string} filePath - Path to the video
+ * @returns {boolean} True if valid extension
+ */
+function isValidVideoType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const validExtensions = ['.mp4', '.mov', '.avi', '.wmv', '.webm', '.mkv', '.m4v', '.flv'];
+  return validExtensions.includes(ext);
+}
+
+/**
+ * Validate image file extension
+ * @param {string} filePath - Path to the image
+ * @returns {boolean} True if valid extension
+ */
+function isValidImageType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+  return validExtensions.includes(ext);
+}
+
+/**
+ * Validate document file extension
+ * @param {string} filePath - Path to the document
+ * @returns {boolean} True if valid extension
+ */
+function isValidDocumentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const validExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx'];
+  return validExtensions.includes(ext);
+}
+
+/**
  * Create a post with an uploaded image
  * @param {import('./types').CreatePostWithImageInput} input
  * @returns {Promise<import('./types').CreatePostWithImageOutput>}
@@ -469,6 +539,115 @@ async function linkedin_cancel_scheduled_post(input) {
 }
 
 /**
+ * Create a LinkedIn poll post
+ * @param {import('./types').CreatePollInput} input
+ * @returns {Promise<import('./types').CreatePollOutput>}
+ */
+async function linkedin_create_poll(input) {
+  // Validate input
+  const validated = schemas.CreatePollInputSchema.parse(input);
+
+  const api = getAPIClient();
+
+  const postData = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+    commentary: validated.commentary || '',
+    visibility: validated.visibility,
+    distribution: {
+      feedDistribution: 'MAIN_FEED'
+    },
+    lifecycleState: 'PUBLISHED',
+    content: {
+      poll: {
+        question: validated.question,
+        options: validated.options.map(opt => ({ text: opt.text })),
+        settings: {
+          duration: validated.duration,
+          voteSelectionType: 'SINGLE_VOTE',
+          isVoterVisibleToAuthor: true
+        }
+      }
+    }
+  };
+
+  const result = await api.createPost(postData);
+
+  return {
+    postUrn: result.postUrn,
+    message: 'Poll created successfully',
+    url: `https://www.linkedin.com/feed/update/${result.postUrn}`,
+    pollQuestion: validated.question,
+    optionCount: validated.options.length,
+    duration: validated.duration
+  };
+}
+
+/**
+ * Create a LinkedIn post with an uploaded document
+ * @param {import('./types').CreatePostWithDocumentInput} input
+ * @returns {Promise<import('./types').CreatePostWithDocumentOutput>}
+ */
+async function linkedin_create_post_with_document(input) {
+  // Validate input
+  const validated = schemas.CreatePostWithDocumentInputSchema.parse(input);
+
+  // Verify file exists and is readable
+  if (!fs.existsSync(validated.documentPath)) {
+    throw new Error(`Document file not found: ${validated.documentPath}`);
+  }
+
+  // Validate file type
+  if (!isValidDocumentType(validated.documentPath)) {
+    throw new Error('Invalid document type. Supported formats: PDF, DOC, DOCX, PPT, PPTX');
+  }
+
+  // Check file size (max 100 MB)
+  const stats = fs.statSync(validated.documentPath);
+  const maxSize = 100 * 1024 * 1024; // 100 MB
+  if (stats.size > maxSize) {
+    throw new Error('Document file size exceeds 100 MB limit');
+  }
+
+  const api = getAPIClient();
+
+  // Step 1: Initialize upload to get upload URL
+  const { uploadUrl, documentUrn } = await api.initializeDocumentUpload();
+
+  // Step 2: Read document and upload binary
+  const documentBuffer = fs.readFileSync(validated.documentPath);
+  const contentType = getDocumentMimeType(validated.documentPath);
+  await api.uploadDocumentBinary(uploadUrl, documentBuffer, contentType);
+
+  // Step 3: Create post with the uploaded document
+  const documentTitle = validated.title || path.basename(validated.documentPath);
+
+  const postData = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+    commentary: validated.commentary,
+    visibility: validated.visibility,
+    distribution: {
+      feedDistribution: 'MAIN_FEED'
+    },
+    content: {
+      media: {
+        id: documentUrn,
+        title: documentTitle
+      }
+    },
+    lifecycleState: 'PUBLISHED'
+  };
+
+  const result = await api.createPost(postData);
+
+  return {
+    postUrn: result.postUrn,
+    documentUrn: documentUrn,
+    message: 'Post with document created successfully',
+    url: `https://www.linkedin.com/feed/update/${result.postUrn}`
+  };
+}
+
+/**
  * Get details of a single scheduled post
  * @param {import('./types').GetScheduledPostInput} input
  * @returns {Promise<import('./types').GetScheduledPostOutput>}
@@ -508,6 +687,146 @@ async function linkedin_get_scheduled_post(input) {
   };
 }
 
+/**
+ * Create a LinkedIn post with an uploaded video
+ * @param {import('./types').CreatePostWithVideoInput} input
+ * @returns {Promise<import('./types').CreatePostWithVideoOutput>}
+ */
+async function linkedin_create_post_with_video(input) {
+  // Validate input
+  const validated = schemas.CreatePostWithVideoInputSchema.parse(input);
+
+  // Verify file exists and is readable
+  if (!fs.existsSync(validated.videoPath)) {
+    throw new Error(`Video file not found: ${validated.videoPath}`);
+  }
+
+  // Validate file type
+  if (!isValidVideoType(validated.videoPath)) {
+    throw new Error('Invalid video type. Supported formats: MP4, MOV, AVI, WMV, WebM, MKV, M4V, FLV');
+  }
+
+  // Check file size (max 200 MB for personal accounts, 5 GB for company pages)
+  const stats = fs.statSync(validated.videoPath);
+  const maxSize = 200 * 1024 * 1024; // 200 MB
+  if (stats.size > maxSize) {
+    throw new Error('Video file size exceeds 200 MB limit for personal accounts');
+  }
+
+  const api = getAPIClient();
+
+  // Step 1: Initialize upload to get upload URL
+  const { uploadUrl, videoUrn } = await api.initializeVideoUpload(stats.size);
+
+  // Step 2: Read video and upload binary
+  const videoBuffer = fs.readFileSync(validated.videoPath);
+  const contentType = getVideoMimeType(validated.videoPath);
+  const { etag } = await api.uploadVideoBinary(uploadUrl, videoBuffer, contentType);
+
+  // Step 3: Finalize upload
+  await api.finalizeVideoUpload(videoUrn, uploadUrl, etag);
+
+  // Step 4: Create post with the uploaded video
+  const videoTitle = validated.title || path.basename(validated.videoPath);
+
+  const postData = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+    commentary: validated.commentary,
+    visibility: validated.visibility,
+    distribution: {
+      feedDistribution: 'MAIN_FEED'
+    },
+    content: {
+      media: {
+        id: videoUrn,
+        title: videoTitle
+      }
+    },
+    lifecycleState: 'PUBLISHED'
+  };
+
+  const result = await api.createPost(postData);
+
+  return {
+    postUrn: result.postUrn,
+    videoUrn: videoUrn,
+    message: 'Post with video created successfully',
+    url: `https://www.linkedin.com/feed/update/${result.postUrn}`
+  };
+}
+
+/**
+ * Create a LinkedIn post with multiple images
+ * @param {import('./types').CreatePostWithMultiImagesInput} input
+ * @returns {Promise<import('./types').CreatePostWithMultiImagesOutput>}
+ */
+async function linkedin_create_post_with_multi_images(input) {
+  // Validate input
+  const validated = schemas.CreatePostWithMultiImagesInputSchema.parse(input);
+
+  // Verify all files exist and are valid image types
+  for (const imagePath of validated.imagePaths) {
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Image file not found: ${imagePath}`);
+    }
+    if (!isValidImageType(imagePath)) {
+      throw new Error(`Invalid image type: ${imagePath}. Supported formats: PNG, JPG, JPEG, GIF`);
+    }
+  }
+
+  const api = getAPIClient();
+
+  // Step 1: Initialize uploads for all images
+  const uploadInfos = await api.initializeMultiImageUpload(validated.imagePaths.length);
+
+  // Step 2: Upload all images
+  const imageUrns = [];
+  for (let i = 0; i < validated.imagePaths.length; i++) {
+    const imagePath = validated.imagePaths[i];
+    const { uploadUrl, imageUrn } = uploadInfos[i];
+
+    const imageBuffer = fs.readFileSync(imagePath);
+    const contentType = getMimeType(imagePath);
+    await api.uploadImageBinary(uploadUrl, imageBuffer, contentType);
+
+    imageUrns.push(imageUrn);
+  }
+
+  // Step 3: Build multi-image content
+  const images = imageUrns.map((urn, index) => {
+    const imageObj = { id: urn };
+    if (validated.altTexts && validated.altTexts[index]) {
+      imageObj.altText = validated.altTexts[index];
+    }
+    return imageObj;
+  });
+
+  // Step 4: Create post with multi-image content
+  const postData = {
+    author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+    commentary: validated.commentary,
+    visibility: validated.visibility,
+    distribution: {
+      feedDistribution: 'MAIN_FEED'
+    },
+    content: {
+      multiImage: {
+        images
+      }
+    },
+    lifecycleState: 'PUBLISHED'
+  };
+
+  const result = await api.createPost(postData);
+
+  return {
+    postUrn: result.postUrn,
+    imageUrns: imageUrns,
+    message: `Post with ${imageUrns.length} images created successfully`,
+    url: `https://www.linkedin.com/feed/update/${result.postUrn}`
+  };
+}
+
 module.exports = {
   linkedin_create_post,
   linkedin_create_post_with_link,
@@ -525,5 +844,10 @@ module.exports = {
   linkedin_schedule_post,
   linkedin_list_scheduled_posts,
   linkedin_cancel_scheduled_post,
-  linkedin_get_scheduled_post
+  linkedin_get_scheduled_post,
+  // Rich media tools
+  linkedin_create_poll,
+  linkedin_create_post_with_document,
+  linkedin_create_post_with_video,
+  linkedin_create_post_with_multi_images
 };

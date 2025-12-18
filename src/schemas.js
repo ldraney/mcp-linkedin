@@ -33,6 +33,15 @@ const CommentURNSchema = z.string().regex(/^urn:li:comment:\(.+,.+\)$/, 'Invalid
 /** @type {import('zod').ZodEnum} */
 const ReactionTypeSchema = z.enum(['LIKE', 'PRAISE', 'EMPATHY', 'INTEREST', 'APPRECIATION', 'ENTERTAINMENT']);
 
+/** @type {import('zod').ZodEnum} */
+const PollDurationSchema = z.enum(['ONE_DAY', 'THREE_DAYS', 'SEVEN_DAYS', 'FOURTEEN_DAYS']);
+
+/** @type {import('zod').ZodString} */
+const DocumentURNSchema = z.string().regex(/^urn:li:document:.+$/, 'Invalid document URN format');
+
+/** @type {import('zod').ZodString} */
+const VideoURNSchema = z.string().regex(/^urn:li:video:.+$/, 'Invalid video URN format');
+
 /** @type {import('zod').ZodObject} */
 const DistributionSchema = z.object({
   feedDistribution: FeedDistributionSchema,
@@ -259,6 +268,64 @@ const GetScheduledPostInputSchema = z.object({
   postId: z.string().uuid('Invalid post ID format')
 });
 
+/** @type {import('zod').ZodObject} */
+const PollOptionSchema = z.object({
+  text: z.string()
+    .min(1, 'Option text cannot be empty')
+    .max(30, 'Option text must be 30 characters or less')
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePollInputSchema = z.object({
+  question: z.string()
+    .min(1, 'Poll question cannot be empty')
+    .max(140, 'Poll question must be 140 characters or less'),
+  options: z.array(PollOptionSchema)
+    .min(2, 'Poll must have at least 2 options')
+    .max(4, 'Poll cannot have more than 4 options'),
+  duration: PollDurationSchema.default('THREE_DAYS'),
+  commentary: z.string()
+    .max(3000, 'Commentary must be 3000 characters or less')
+    .optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithDocumentInputSchema = z.object({
+  commentary: z.string()
+    .min(1, 'Commentary cannot be empty')
+    .max(3000, 'Commentary must be 3000 characters or less'),
+  documentPath: z.string().min(1, 'Document path cannot be empty'),
+  title: z.string()
+    .max(400, 'Title must be 400 characters or less')
+    .optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithVideoInputSchema = z.object({
+  commentary: z.string()
+    .min(1, 'Commentary cannot be empty')
+    .max(3000, 'Commentary must be 3000 characters or less'),
+  videoPath: z.string().min(1, 'Video path cannot be empty'),
+  title: z.string()
+    .max(400, 'Title must be 400 characters or less')
+    .optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithMultiImagesInputSchema = z.object({
+  commentary: z.string()
+    .min(1, 'Commentary cannot be empty')
+    .max(3000, 'Commentary must be 3000 characters or less'),
+  imagePaths: z.array(z.string().min(1, 'Image path cannot be empty'))
+    .min(2, 'Must provide at least 2 images')
+    .max(20, 'Cannot upload more than 20 images'),
+  altTexts: z.array(z.string().max(300)).optional(),
+  visibility: VisibilitySchema.default('PUBLIC')
+});
+
 // ============================================================================
 // MCP Tool Output Schemas
 // ============================================================================
@@ -375,6 +442,40 @@ const GetScheduledPostOutputSchema = z.object({
   message: z.string()
 });
 
+/** @type {import('zod').ZodObject} */
+const CreatePollOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  message: z.string(),
+  url: z.string().url(),
+  pollQuestion: z.string(),
+  optionCount: z.number().int(),
+  duration: PollDurationSchema
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithDocumentOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  documentUrn: DocumentURNSchema,
+  message: z.string(),
+  url: z.string().url()
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithVideoOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  videoUrn: VideoURNSchema,
+  message: z.string(),
+  url: z.string().url()
+});
+
+/** @type {import('zod').ZodObject} */
+const CreatePostWithMultiImagesOutputSchema = z.object({
+  postUrn: PostURNSchema,
+  imageUrns: z.array(ImageURNSchema),
+  message: z.string(),
+  url: z.string().url()
+});
+
 // ============================================================================
 // Error Schemas
 // ============================================================================
@@ -454,6 +555,9 @@ module.exports = {
   ImageURNSchema,
   CommentURNSchema,
   ReactionTypeSchema,
+  PollDurationSchema,
+  DocumentURNSchema,
+  VideoURNSchema,
   DistributionSchema,
   ArticleSchema,
   MediaSchema,
@@ -479,6 +583,11 @@ module.exports = {
   ListScheduledPostsInputSchema,
   CancelScheduledPostInputSchema,
   GetScheduledPostInputSchema,
+  PollOptionSchema,
+  CreatePollInputSchema,
+  CreatePostWithDocumentInputSchema,
+  CreatePostWithVideoInputSchema,
+  CreatePostWithMultiImagesInputSchema,
 
   // MCP tool output schemas
   CreatePostOutputSchema,
@@ -496,6 +605,10 @@ module.exports = {
   ListScheduledPostsOutputSchema,
   CancelScheduledPostOutputSchema,
   GetScheduledPostOutputSchema,
+  CreatePollOutputSchema,
+  CreatePostWithDocumentOutputSchema,
+  CreatePostWithVideoOutputSchema,
+  CreatePostWithMultiImagesOutputSchema,
 
   // Scheduling schemas
   ScheduledPostStatusSchema,

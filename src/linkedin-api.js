@@ -420,6 +420,212 @@ class LinkedInAPI {
       statusCode: response.statusCode
     };
   }
+
+  /**
+   * Initialize document upload to get upload URL
+   * @returns {Promise<{uploadUrl: string, documentUrn: string}>}
+   */
+  async initializeDocumentUpload() {
+    const response = await makeRequest({
+      method: 'POST',
+      path: '/rest/documents?action=initializeUpload',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        initializeUploadRequest: {
+          owner: `urn:li:person:${this.personId}`
+        }
+      }
+    });
+
+    return {
+      uploadUrl: response.body.value.uploadUrl,
+      documentUrn: response.body.value.document
+    };
+  }
+
+  /**
+   * Upload document binary to LinkedIn
+   * @param {string} uploadUrl - URL from initializeDocumentUpload
+   * @param {Buffer} documentBuffer - Document binary data
+   * @param {string} contentType - MIME type
+   * @returns {Promise<{statusCode: number}>}
+   */
+  async uploadDocumentBinary(uploadUrl, documentBuffer, contentType) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(uploadUrl);
+
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': contentType,
+          'Content-Length': documentBuffer.length
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({ statusCode: res.statusCode });
+          } else {
+            const error = new Error(`Document upload failed: ${res.statusCode}`);
+            error.response = { statusCode: res.statusCode, body: data };
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(documentBuffer);
+      req.end();
+    });
+  }
+
+  /**
+   * Initialize video upload to get upload URL and video URN
+   * @param {number} fileSizeBytes - Size of video file in bytes
+   * @returns {Promise<{uploadUrl: string, videoUrn: string}>}
+   */
+  async initializeVideoUpload(fileSizeBytes) {
+    const response = await makeRequest({
+      method: 'POST',
+      path: '/rest/videos?action=initializeUpload',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        initializeUploadRequest: {
+          owner: `urn:li:person:${this.personId}`,
+          fileSizeBytes,
+          uploadCaptions: false,
+          uploadThumbnail: false
+        }
+      }
+    });
+
+    return {
+      uploadUrl: response.body.value.uploadInstructions[0].uploadUrl,
+      videoUrn: response.body.value.video
+    };
+  }
+
+  /**
+   * Upload video binary to LinkedIn
+   * @param {string} uploadUrl - URL from initializeVideoUpload
+   * @param {Buffer} videoBuffer - Video binary data
+   * @param {string} contentType - MIME type
+   * @returns {Promise<{statusCode: number, etag: string}>}
+   */
+  async uploadVideoBinary(uploadUrl, videoBuffer, contentType) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(uploadUrl);
+
+      const options = {
+        hostname: url.hostname,
+        path: url.pathname + url.search,
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': contentType,
+          'Content-Length': videoBuffer.length
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve({
+              statusCode: res.statusCode,
+              etag: res.headers['etag'] || ''
+            });
+          } else {
+            const error = new Error(`Video upload failed: ${res.statusCode}`);
+            error.response = { statusCode: res.statusCode, body: data };
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(videoBuffer);
+      req.end();
+    });
+  }
+
+  /**
+   * Finalize video upload after binary upload is complete
+   * @param {string} videoUrn - Video URN from initializeVideoUpload
+   * @param {string} uploadUrl - Upload URL used
+   * @param {string} etag - ETag from upload response
+   * @returns {Promise<{statusCode: number}>}
+   */
+  async finalizeVideoUpload(videoUrn, uploadUrl, etag) {
+    const response = await makeRequest({
+      method: 'POST',
+      path: '/rest/videos?action=finalizeUpload',
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'LinkedIn-Version': this.apiVersion,
+        'X-Restli-Protocol-Version': '2.0.0'
+      },
+      body: {
+        finalizeUploadRequest: {
+          video: videoUrn,
+          uploadToken: '',
+          uploadedPartIds: [etag]
+        }
+      }
+    });
+
+    return {
+      statusCode: response.statusCode
+    };
+  }
+
+  /**
+   * Initialize multi-image upload for batch image upload
+   * @param {number} imageCount - Number of images to upload
+   * @returns {Promise<Array<{uploadUrl: string, imageUrn: string}>>}
+   */
+  async initializeMultiImageUpload(imageCount) {
+    const results = [];
+
+    for (let i = 0; i < imageCount; i++) {
+      const response = await makeRequest({
+        method: 'POST',
+        path: '/rest/images?action=initializeUpload',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'LinkedIn-Version': this.apiVersion,
+          'X-Restli-Protocol-Version': '2.0.0'
+        },
+        body: {
+          initializeUploadRequest: {
+            owner: `urn:li:person:${this.personId}`
+          }
+        }
+      });
+
+      results.push({
+        uploadUrl: response.body.value.uploadUrl,
+        imageUrn: response.body.value.image
+      });
+    }
+
+    return results;
+  }
 }
 
 module.exports = LinkedInAPI;

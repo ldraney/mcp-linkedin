@@ -7,22 +7,26 @@ MCP server for LinkedIn post management via Claude Desktop.
 ```
 src/
   index.js       # MCP server entry point (stdio transport)
-  tools.js       # 16 tool implementations
+  tools.js       # 18 tool implementations
   linkedin-api.js # LinkedIn REST API client
   schemas.js     # Zod validation schemas
   types.js       # JSDoc type definitions
   database.js    # SQLite wrapper for scheduled posts
   scheduler.js   # Background scheduler daemon
-__tests__/       # Jest test suite (72 tests)
+__tests__/       # Jest test suite (118 tests)
 ```
 
-## Current Tools (Phase 3 Complete)
+## Current Tools (Phase 4 Complete)
 
 | Tool | Description |
 |------|-------------|
 | `linkedin_create_post` | Create text posts |
 | `linkedin_create_post_with_link` | Posts with article/link preview |
 | `linkedin_create_post_with_image` | Upload image + create post |
+| `linkedin_create_poll` | Create poll posts (2-4 options, 1-14 day duration) |
+| `linkedin_create_post_with_document` | Upload PDF/PPT/DOC + create post |
+| `linkedin_create_post_with_video` | Upload video + create post (MP4, MOV, AVI, etc.) |
+| `linkedin_create_post_with_multi_images` | Upload 2-20 images + create post |
 | `linkedin_get_my_posts` | Retrieve recent posts (paginated) |
 | `linkedin_update_post` | Edit existing posts (commentary, CTA, landing page) |
 | `linkedin_delete_post` | Delete by URN |
@@ -69,7 +73,7 @@ Required in `.env`:
 ```bash
 npm start        # Start MCP server
 npm scheduler    # Start scheduler daemon (runs every minute)
-npm test         # Run tests (72 passing)
+npm test         # Run tests (97 passing)
 ```
 
 ## Roadmap
@@ -126,12 +130,31 @@ LinkedIn API does NOT support native scheduling. Built custom solution:
   - Retry logic (3 attempts max)
   - Graceful shutdown on SIGINT/SIGTERM
 
-### Phase 4: Rich Media (All possible with current `w_member_social` scope)
+### Phase 4: Rich Media (COMPLETE)
 
-- [ ] **Video posts** - Via Videos API + Posts API
-- [ ] **Document posts** - PDFs, PPTs, DOCs via Documents API + Posts API
-- [ ] **Multi-image posts** - Via MultiImage API
-- [ ] **Poll posts** - Via Poll API
+All features work with existing `w_member_social` scope.
+
+- [x] **Poll posts** - Via Poll API
+  - Endpoint: `POST /rest/posts` with `content.poll`
+  - Question: max 140 characters
+  - Options: 2-4 options, max 30 characters each
+  - Duration: ONE_DAY, THREE_DAYS, SEVEN_DAYS, FOURTEEN_DAYS
+
+- [x] **Document posts** - PDFs, PPTs, DOCs via Documents API + Posts API
+  - Upload: `POST /rest/documents?action=initializeUpload` → PUT binary
+  - Formats: PDF, DOC, DOCX, PPT, PPTX
+  - Max size: 100 MB, max pages: 300
+
+- [x] **Video posts** - Via Videos API + Posts API
+  - Upload: `POST /rest/videos?action=initializeUpload` → PUT binary → `POST /rest/videos?action=finalizeUpload`
+  - Formats: MP4, MOV, AVI, WMV, WebM, MKV, M4V, FLV
+  - Max size: 200 MB for personal accounts
+
+- [x] **Multi-image posts** - Via Images API + Posts API
+  - Upload multiple images using Images API
+  - Create post with `content.multiImage`
+  - Supports 2-20 images per post
+  - Optional alt text for each image
 
 ### Phase 5: Integrations (Custom)
 
