@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.2",
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for managing LinkedIn posts - create text, image, video, document, poll, and multi-image posts. Schedule posts, add comments and reactions.",
   "author": {
     "name": "Lucas Draney"
@@ -30,32 +30,32 @@
   "user_config": {
     "linkedin_client_id": {
       "type": "string",
-      "title": "Client ID",
-      "description": "LinkedIn OAuth app client ID",
-      "required": true
+      "title": "Client ID (optional)",
+      "description": "LinkedIn OAuth app client ID - leave blank to set up via chat",
+      "required": false
     },
     "linkedin_client_secret": {
       "type": "string",
-      "title": "Client Secret",
-      "description": "LinkedIn OAuth app client secret",
-      "required": true
+      "title": "Client Secret (optional)",
+      "description": "LinkedIn OAuth app client secret - leave blank to set up via chat",
+      "required": false
     },
     "linkedin_redirect_uri": {
       "type": "string",
-      "title": "Redirect URI",
-      "description": "OAuth callback URL (e.g., https://localhost:8888/callback)",
-      "required": true
+      "title": "Redirect URI (optional)",
+      "description": "OAuth callback URL - defaults to https://localhost:8888/callback",
+      "required": false
     },
     "linkedin_person_id": {
       "type": "string",
-      "title": "Person ID",
-      "description": "Your LinkedIn person ID (from profile URN)",
-      "required": true
+      "title": "Person ID (optional)",
+      "description": "Your LinkedIn person ID - obtained automatically during OAuth",
+      "required": false
     },
     "linkedin_access_token": {
       "type": "string",
-      "title": "Access Token",
-      "description": "OAuth access token (obtain via linkedin_exchange_code tool after install)",
+      "title": "Access Token (optional)",
+      "description": "OAuth access token - obtained via linkedin_exchange_code tool",
       "required": false
     }
   },

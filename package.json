@@ -1,6 +1,6 @@
 {
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for managing LinkedIn posts",
   "main": "src/index.js",
   "bin": {
