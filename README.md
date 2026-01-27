@@ -1,135 +1,115 @@
 # mcp-linkedin
 
-MCP server for managing LinkedIn posts - create, update, and manage posts to share expertise and GitHub projects.
+MCP server for managing LinkedIn posts - create text, image, video, document, poll, and multi-image posts. Schedule posts, add comments and reactions.
 
-## Overview
+## Installation
 
-This MCP (Model Context Protocol) server enables programmatic management of LinkedIn posts. The primary use case is to help share technical expertise, showcase GitHub projects, and engage with a professional audience through LinkedIn's platform.
+### MCPB Bundle (One-Click)
+Download from [latest release](https://github.com/intelligent-staffing-systems/mcp-linkedin/releases/latest) and open `mcp-linkedin.mcpb` with Claude Desktop.
 
-## User Story
-
-As a technical professional, I want to:
-- Create LinkedIn posts that link to my GitHub projects
-- Update existing posts to reflect project changes
-- Manage my LinkedIn content programmatically
-- Share my expertise and educational content with my professional network
-
-This tool is designed to help educate and demonstrate expertise to a LinkedIn audience through consistent, high-quality content sharing.
-
-## Status
-
-✅ **MVP Complete** - All core tools implemented and tested!
-
-**Milestones:**
-- ✅ LinkedIn Developer App with OAuth 2.0
-- ✅ 7 MCP tools implemented (create, get, delete posts + auth)
-- ✅ 24 automated tests passing
-- ✅ Type-safe with JSDoc + Zod validation
-- ✅ MCP server with stdio transport
-- ✅ Ready for Claude Desktop integration
-
-## Features
-
-### ✅ Implemented (MVP)
-
-- **linkedin_create_post** - Create simple text posts with hashtags and mentions
-- **linkedin_create_post_with_link** - Create posts with link previews (GitHub, blogs, etc.)
-- **linkedin_get_my_posts** - Retrieve your recent posts with pagination
-- **linkedin_delete_post** - Delete posts by URN
-- **linkedin_get_auth_url** - Generate OAuth authorization URL
-- **linkedin_exchange_code** - Exchange auth code for access token
-- **linkedin_get_user_info** - Get your LinkedIn profile information
-
-### 🚧 Planned (Next Phase)
-
-- **Post scheduling** - Schedule posts for future publication (HIGH PRIORITY)
-- **Draft management** - Save and manage draft posts locally
-- **Image uploads** - Create posts with images
-- **Post updates** - Edit existing posts
-- **Analytics** - View post engagement metrics (if API supports)
-
-## LinkedIn API
-
-This MCP will utilize LinkedIn's REST API:
-- Base URL: `https://api.linkedin.com/rest/posts`
-- Authentication: OAuth 2.0
-- Required permissions: `w_member_social` scope
-- API Documentation: [LinkedIn Posts API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api)
-
-## Development Philosophy
-
-1. Start with clear user stories based on LinkedIn API capabilities
-2. Refine requirements through discussion and iteration
-3. Build incrementally with well-defined issues and branches
-4. Test thoroughly with real-world use cases
-
-## Getting Started
-
-### Prerequisites
-
-1. Create a LinkedIn Developer App at https://www.linkedin.com/developers/apps
-2. Add these products to your app:
-   - "Sign In with LinkedIn using OpenID Connect"
-   - "Share on LinkedIn"
-3. Configure OAuth redirect URI (e.g., `https://localhost:3000/callback`)
-
-### Setup
-
-1. Clone the repository:
+### npm / npx
 ```bash
-git clone https://github.com/intelligent-staffing-systems/mcp-linkedin.git
-cd mcp-linkedin
+npx @ldraney/mcp-linkedin
 ```
 
-2. Install dependencies:
+### Manual MCP Config
+```json
+{
+  "mcpServers": {
+    "linkedin": {
+      "command": "npx",
+      "args": ["@ldraney/mcp-linkedin"],
+      "env": {
+        "LINKEDIN_CLIENT_ID": "your-client-id",
+        "LINKEDIN_CLIENT_SECRET": "your-client-secret",
+        "LINKEDIN_REDIRECT_URI": "https://localhost:8888/callback",
+        "LINKEDIN_PERSON_ID": "your-person-id",
+        "LINKEDIN_ACCESS_TOKEN": "your-access-token"
+      }
+    }
+  }
+}
+```
+
+## Tools (20 Total)
+
+### Content Creation
+| Tool | Description |
+|------|-------------|
+| `linkedin_create_post` | Create text posts |
+| `linkedin_create_post_with_link` | Posts with article/link preview |
+| `linkedin_create_post_with_image` | Upload image + create post |
+| `linkedin_create_post_with_video` | Upload video + create post |
+| `linkedin_create_post_with_document` | Upload PDF/PPT/DOC + create post |
+| `linkedin_create_post_with_multi_images` | Upload 2-20 images + create post |
+| `linkedin_create_poll` | Create poll posts (2-4 options) |
+
+### Content Management
+| Tool | Description |
+|------|-------------|
+| `linkedin_get_my_posts` | Retrieve recent posts (paginated) |
+| `linkedin_update_post` | Edit existing posts |
+| `linkedin_delete_post` | Delete by URN |
+
+### Social Interactions
+| Tool | Description |
+|------|-------------|
+| `linkedin_add_comment` | Add comment to a post |
+| `linkedin_add_reaction` | React to a post (LIKE, PRAISE, etc.) |
+
+### Scheduling
+| Tool | Description |
+|------|-------------|
+| `linkedin_schedule_post` | Schedule for future publication |
+| `linkedin_list_scheduled_posts` | List by status |
+| `linkedin_cancel_scheduled_post` | Cancel pending post |
+| `linkedin_get_scheduled_post` | Get scheduled post details |
+
+### Authentication
+| Tool | Description |
+|------|-------------|
+| `linkedin_get_auth_url` | Start OAuth flow |
+| `linkedin_exchange_code` | Complete OAuth |
+| `linkedin_refresh_token` | Refresh expired token |
+| `linkedin_get_user_info` | Get profile info |
+
+## Setup
+
+### Option 1: Quick Setup (Recommended)
+1. Install the extension
+2. Ask Claude: "Help me set up LinkedIn authentication"
+3. Follow the guided OAuth flow
+
+### Option 2: Manual Setup
+1. Create a LinkedIn Developer App at https://www.linkedin.com/developers/apps
+2. Add products: "Sign In with LinkedIn using OpenID Connect" + "Share on LinkedIn"
+3. Configure redirect URI: `https://localhost:8888/callback`
+4. Set environment variables (see Installation above)
+
+## Running the Scheduler
+
+For scheduled posts to publish automatically:
+```bash
+npm run scheduler
+```
+
+This runs a daemon that checks every minute for posts due to publish.
+
+## Development
+
 ```bash
 npm install
+npm test              # 118 tests
+npm run test:coverage # Coverage report
+npm start             # Start MCP server
+npm run scheduler     # Start scheduler daemon
 ```
-
-3. Create `.env` file (copy from `.env.example` and fill in your values):
-```bash
-cp .env.example .env
-```
-
-4. Run tests:
-```bash
-npm test  # All 24 tests should pass
-```
-
-5. **Setup with Claude Desktop:**
-
-See [MCP_SETUP.md](./MCP_SETUP.md) for detailed Claude Desktop configuration instructions.
-
-### Environment Variables
-
-See `.env.example` for required configuration:
-- `LINKEDIN_CLIENT_ID` - Your app's client ID
-- `LINKEDIN_CLIENT_SECRET` - Your app's client secret
-- `LINKEDIN_REDIRECT_URI` - OAuth callback URL
-- `LINKEDIN_PERSON_ID` - Your LinkedIn person URN (from userinfo endpoint)
-- `LINKEDIN_ACCESS_TOKEN` - OAuth access token (60-day expiry)
 
 ## Documentation
 
-- **[MCP_SETUP.md](./MCP_SETUP.md)** - Claude Desktop configuration and usage guide
-- **[USER_STORY.md](./USER_STORY.md)** - Complete user stories and feature roadmap
-- **[LINKEDIN_API_REFERENCE.md](./LINKEDIN_API_REFERENCE.md)** - Comprehensive API documentation
-- **[src/types.js](./src/types.js)** - JSDoc type definitions
-- **[src/schemas.js](./src/schemas.js)** - Zod validation schemas
-
-## Testing
-
-```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run test:coverage # Coverage report
-```
-
-All 24 tests passing with 100% code coverage for core tools!
-
-## Contributing
-
-Lucas Draney (@ldraney)
+- [CLAUDE.md](./CLAUDE.md) - Project structure and API details
+- [MCP_SETUP.md](./MCP_SETUP.md) - Claude Desktop configuration
+- [LINKEDIN_API_REFERENCE.md](./LINKEDIN_API_REFERENCE.md) - API documentation
 
 ## License
 
