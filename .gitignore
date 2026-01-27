@@ -22,3 +22,6 @@ auth_tokens.json
 
 # Database
 *.db
+
+# MCPB builds
+*.mcpb
