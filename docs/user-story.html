@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Story - mcp-linkedin</title>
+  <meta name="description" content="User stories and project roadmap for mcp-linkedin, an open source MCP server for LinkedIn.">
+  <link rel="canonical" href="https://ldraney.github.io/mcp-linkedin/user-story.html">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a66c2' rx='15' width='100' height='100'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-family='system-ui' font-size='60' font-weight='bold'>m</text></svg>">
+  <style>
+    :root {
+      --primary: #0a66c2;
+      --primary-dark: #004182;
+      --bg: #f3f2ef;
+      --text: #191919;
+      --text-muted: #666;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 5px; }
+    .header a { color: white; opacity: 0.8; text-decoration: none; font-size: 0.9rem; }
+    .header a:hover { opacity: 1; }
+    .content {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .content h2 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-size: 1.3rem;
+    }
+    .content h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+    .content p, .content ul {
+      margin-bottom: 15px;
+      color: var(--text);
+    }
+    .content ul {
+      padding-left: 25px;
+    }
+    .content li {
+      margin-bottom: 5px;
+    }
+    .updated {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 30px;
+    }
+    .story-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .story-card h4 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+    .story-card .narrative {
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .badge-done { background: #e6f4ea; color: #1e7e34; }
+    .badge-planned { background: #fff3cd; color: #856404; }
+    .badge-future { background: #e8eaf6; color: #3949ab; }
+    .phase-divider {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 30px 0;
+    }
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>User Story</h1>
+    <a href="./">Back to mcp-linkedin</a>
+  </div>
+
+  <div class="content">
+    <p class="updated">Last updated: January 28, 2026</p>
+
+    <h2>Primary User Persona</h2>
+    <p>A technical professional who wants to share expertise and projects with a professional LinkedIn audience. Goals include educating their network, showcasing open-source contributions, building a professional brand through consistent content, and automating the posting workflow.</p>
+
+    <h2>Pain Points</h2>
+    <ul>
+      <li>Manual posting is time-consuming</li>
+      <li>Hard to maintain a consistent posting schedule</li>
+      <li>Difficulty linking GitHub projects with rich previews</li>
+      <li>No programmatic way to manage LinkedIn content</li>
+      <li>Want to post when projects are ready, not when manually available</li>
+    </ul>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 1 &mdash; Essential Posting</h2>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-1: Create Text Post</h4>
+      <p class="narrative">As a technical professional, I want to create a LinkedIn post with text content so that I can share insights and updates with my network.</p>
+      <ul>
+        <li>Accepts text commentary (up to ~3000 characters)</li>
+        <li>Supports hashtags and mentions</li>
+        <li>Configurable visibility (PUBLIC, CONNECTIONS, LOGGED_IN)</li>
+        <li>Returns post URN and confirmation</li>
+      </ul>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-2: Create Post with Link</h4>
+      <p class="narrative">As a developer, I want to create a LinkedIn post with a link to my project so that my network can discover and explore my work.</p>
+      <ul>
+        <li>Accepts commentary + URL</li>
+        <li>Optional custom title and description</li>
+        <li>LinkedIn renders rich link preview</li>
+      </ul>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-3: Retrieve My Posts</h4>
+      <p class="narrative">As a content creator, I want to retrieve my recent LinkedIn posts so that I can review what I've shared.</p>
+      <ul>
+        <li>Paginated results (limit, offset)</li>
+        <li>Returns post URN, commentary, timestamp, visibility</li>
+      </ul>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-4: Delete Post</h4>
+      <p class="narrative">As a content manager, I want to delete a LinkedIn post by its URN so that I can remove outdated content.</p>
+      <ul>
+        <li>Accepts post URN</li>
+        <li>Idempotent (deleting already-deleted post does not error)</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 2 &mdash; Content Management</h2>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-5: Update Existing Post</h4>
+      <p class="narrative">As a content curator, I want to edit an existing LinkedIn post so that I can correct mistakes or update information.</p>
+      <ul>
+        <li>Update commentary, call-to-action labels, and landing page URL</li>
+      </ul>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-6: Create Post with Image</h4>
+      <p class="narrative">As a visual storyteller, I want to create a LinkedIn post with an image so that I can share screenshots, diagrams, or visual content.</p>
+      <ul>
+        <li>Accepts local image path (PNG, JPG, GIF)</li>
+        <li>Uploads via Images API, creates post with image URN</li>
+        <li>Supports alt text for accessibility</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 2.5 &mdash; Social Interactions</h2>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Add Comment</h4>
+      <p class="narrative">Comment on any post (max 1250 characters).</p>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Add Reaction</h4>
+      <p class="narrative">React to posts with LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, or ENTERTAINMENT.</p>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 3 &mdash; Scheduling</h2>
+    <p>LinkedIn API does <strong>not</strong> support native scheduling. A custom solution was built using SQLite and node-cron.</p>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>US-8: Schedule Post for Future</h4>
+      <p class="narrative">As a busy professional, I want to schedule a LinkedIn post for a specific date/time so that I can maintain consistent posting.</p>
+      <ul>
+        <li>Stores scheduled posts in local SQLite database</li>
+        <li>Scheduler daemon checks every minute and publishes due posts</li>
+        <li>Retry logic (3 attempts max)</li>
+        <li>Cancel, list, and inspect scheduled posts</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 4 &mdash; Rich Media</h2>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Poll Posts</h4>
+      <p class="narrative">Create polls with 2-4 options, durations from 1 to 14 days.</p>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Document Posts</h4>
+      <p class="narrative">Upload PDFs, PPTs, and DOCs (up to 100 MB / 300 pages).</p>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Video Posts</h4>
+      <p class="narrative">Upload MP4, MOV, AVI, and more (up to 200 MB for personal accounts).</p>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-done">Complete</span>
+      <h4>Multi-Image Posts</h4>
+      <p class="narrative">Upload 2-20 images per post with optional alt text.</p>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 5 &mdash; Integrations (Planned)</h2>
+
+    <div class="story-card">
+      <span class="badge badge-planned">Planned</span>
+      <h4>Draft Management</h4>
+      <p class="narrative">Save and manage draft posts locally (LinkedIn API does not support drafts).</p>
+    </div>
+
+    <div class="story-card">
+      <span class="badge badge-future">Future</span>
+      <h4>GitHub Integration</h4>
+      <p class="narrative">Auto-post from GitHub releases and pull requests.</p>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Technical Constraints</h2>
+    <ul>
+      <li>No native post scheduling via LinkedIn API</li>
+      <li>No draft API</li>
+      <li>Rate limits are undocumented (exponential backoff used)</li>
+      <li>Analytics for personal posts are unknown/undocumented</li>
+      <li>Access tokens expire after 60 days (refresh mechanism implemented)</li>
+      <li>Carousel posts require sponsored accounts only</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>
+      <a href="./">mcp-linkedin</a> ·
+      <a href="https://github.com/ldraney/mcp-linkedin">GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>

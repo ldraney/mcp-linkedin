@@ -236,7 +236,7 @@ Access tokens expire after 60 days. To refresh:
 
 For issues or questions:
 - Check the [main README](./README.md)
-- Review [USER_STORY.md](./USER_STORY.md) for feature details
+- Review [User Story](https://ldraney.github.io/mcp-linkedin/user-story.html) for feature details
 - Open an issue on GitHub
 
 ---
