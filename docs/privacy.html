@@ -98,6 +98,22 @@
       <li>Tokens are never written to plain text files or transmitted to any third party</li>
     </ul>
 
+    <h2>macOS Keychain Prompt</h2>
+    <p>On macOS, after completing the LinkedIn OAuth flow you will see a system dialog:</p>
+    <blockquote style="background: #f9f9f9; border-left: 4px solid var(--primary); padding: 15px; margin: 15px 0; border-radius: 4px;">
+      <strong>"node" wants to use your confidential information stored in "mcp-linkedin" in your keychain.</strong><br>
+      To allow this, enter the "login" keychain password.
+    </blockquote>
+    <p><strong>This is expected and safe.</strong> Here is what is happening:</p>
+    <ul>
+      <li>mcp-linkedin stores your LinkedIn OAuth token in your operating system's secure keychain, not in a plain text file</li>
+      <li>macOS requires your login password to authorize <code>node</code> (the runtime that runs mcp-linkedin) to read or write that keychain entry</li>
+      <li>This is the same prompt you see when any application accesses saved passwords in Keychain Access</li>
+      <li>Your Mac password is handled entirely by macOS and is never seen or stored by mcp-linkedin</li>
+      <li>You can verify this by opening <strong>Keychain Access.app</strong> and searching for "mcp-linkedin" to see the stored entry</li>
+    </ul>
+    <p>On Windows and Linux, equivalent secure credential storage is used (Windows Credential Manager and libsecret/Secret Service, respectively) with their own system prompts.</p>
+
     <h2>LinkedIn API Access</h2>
     <p>The application requests the <code>w_member_social</code> scope, which allows:</p>
     <ul>
