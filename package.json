@@ -1,6 +1,6 @@
 {
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server for managing LinkedIn posts",
   "main": "src/index.js",
   "bin": {
@@ -24,7 +24,6 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "better-sqlite3": "^11.6.0",
     "dotenv": "^16.3.1",
     "node-cron": "^3.0.3",
     "uuid": "^11.0.3",

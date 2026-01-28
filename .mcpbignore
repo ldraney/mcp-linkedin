@@ -1,0 +1,33 @@
+# Development/test files
+__tests__/
+*.test.js
+jest.config.js
+.env
+.env.example
+
+# Documentation
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Claude dev files
+.claude/
+
+# OAuth relay (separate deployment)
+oauth-relay/
+
+# Old database files
+*.db
+scheduled_posts.db
+
+# Other
+test_post.js
+todos.db
+*.html

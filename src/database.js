@@ -1,10 +1,12 @@
 /**
- * @fileoverview SQLite database wrapper for scheduled LinkedIn posts
+ * @fileoverview JSON file-based storage for scheduled LinkedIn posts
+ * Replaces SQLite for portability (no native modules)
  * @module database
  */
 
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -12,44 +14,48 @@ const { v4: uuidv4 } = require('uuid');
  * @typedef {import('./types').ScheduledPostStatus} ScheduledPostStatus
  */
 
-const DEFAULT_DB_PATH = path.join(__dirname, '..', 'scheduled_posts.db');
+// Store in user's home directory for persistence across installs
+const DEFAULT_DB_PATH = path.join(os.homedir(), '.mcp-linkedin-scheduled-posts.json');
 
 /**
- * Database wrapper for scheduled posts
+ * JSON-based storage for scheduled posts
  */
 class ScheduledPostsDB {
   /**
-   * @param {string} [dbPath] - Path to the SQLite database file
+   * @param {string} [dbPath] - Path to the JSON database file
    */
   constructor(dbPath = DEFAULT_DB_PATH) {
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this._initializeSchema();
+    this.dbPath = dbPath;
+    this.posts = this._load();
   }
 
   /**
-   * Initialize the database schema
+   * Load posts from JSON file
+   * @private
+   * @returns {Object.<string, Object>} Posts indexed by ID
+   */
+  _load() {
+    try {
+      if (fs.existsSync(this.dbPath)) {
+        const data = fs.readFileSync(this.dbPath, 'utf8');
+        return JSON.parse(data);
+      }
+    } catch (err) {
+      console.error('Error loading scheduled posts:', err.message);
+    }
+    return {};
+  }
+
+  /**
+   * Save posts to JSON file
    * @private
    */
-  _initializeSchema() {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS scheduled_posts (
-        id TEXT PRIMARY KEY,
-        commentary TEXT NOT NULL,
-        url TEXT,
-        visibility TEXT DEFAULT 'PUBLIC',
-        scheduled_time TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at TEXT NOT NULL,
-        published_at TEXT,
-        post_urn TEXT,
-        error_message TEXT,
-        retry_count INTEGER DEFAULT 0
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_status ON scheduled_posts(status);
-      CREATE INDEX IF NOT EXISTS idx_scheduled_time ON scheduled_posts(scheduled_time);
-    `);
+  _save() {
+    try {
+      fs.writeFileSync(this.dbPath, JSON.stringify(this.posts, null, 2));
+    } catch (err) {
+      console.error('Error saving scheduled posts:', err.message);
+    }
   }
 
   /**
@@ -65,14 +71,24 @@ class ScheduledPostsDB {
     const id = uuidv4();
     const createdAt = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      INSERT INTO scheduled_posts (id, commentary, url, visibility, scheduled_time, status, created_at)
-      VALUES (?, ?, ?, ?, ?, 'pending', ?)
-    `);
+    const post = {
+      id,
+      commentary,
+      url,
+      visibility,
+      scheduledTime,
+      status: 'pending',
+      createdAt,
+      publishedAt: null,
+      postUrn: null,
+      errorMessage: null,
+      retryCount: 0
+    };
 
-    stmt.run(id, commentary, url, visibility, scheduledTime, createdAt);
+    this.posts[id] = post;
+    this._save();
 
-    return this.getScheduledPost(id);
+    return this._toPost(post);
   }
 
   /**
@@ -81,9 +97,8 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} The scheduled post or null if not found
    */
   getScheduledPost(id) {
-    const stmt = this.db.prepare('SELECT * FROM scheduled_posts WHERE id = ?');
-    const row = stmt.get(id);
-    return row ? this._rowToPost(row) : null;
+    const post = this.posts[id];
+    return post ? this._toPost(post) : null;
   }
 
   /**
@@ -93,23 +108,16 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost[]} Array of scheduled posts
    */
   getScheduledPosts(status = null, limit = 50) {
-    let stmt;
+    let posts = Object.values(this.posts);
+
     if (status) {
-      stmt = this.db.prepare(`
-        SELECT * FROM scheduled_posts
-        WHERE status = ?
-        ORDER BY scheduled_time ASC
-        LIMIT ?
-      `);
-      return stmt.all(status, limit).map(row => this._rowToPost(row));
-    } else {
-      stmt = this.db.prepare(`
-        SELECT * FROM scheduled_posts
-        ORDER BY scheduled_time ASC
-        LIMIT ?
-      `);
-      return stmt.all(limit).map(row => this._rowToPost(row));
+      posts = posts.filter(p => p.status === status);
     }
+
+    // Sort by scheduled time ascending
+    posts.sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime));
+
+    return posts.slice(0, limit).map(p => this._toPost(p));
   }
 
   /**
@@ -117,13 +125,11 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost[]} Array of posts ready to publish
    */
   getDuePosts() {
-    const now = new Date().toISOString();
-    const stmt = this.db.prepare(`
-      SELECT * FROM scheduled_posts
-      WHERE status = 'pending' AND scheduled_time <= ?
-      ORDER BY scheduled_time ASC
-    `);
-    return stmt.all(now).map(row => this._rowToPost(row));
+    const now = new Date();
+    return Object.values(this.posts)
+      .filter(p => p.status === 'pending' && new Date(p.scheduledTime) <= now)
+      .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
+      .map(p => this._toPost(p));
   }
 
   /**
@@ -133,14 +139,15 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} Updated post or null if not found
    */
   markAsPublished(id, postUrn) {
-    const publishedAt = new Date().toISOString();
-    const stmt = this.db.prepare(`
-      UPDATE scheduled_posts
-      SET status = 'published', published_at = ?, post_urn = ?
-      WHERE id = ?
-    `);
-    stmt.run(publishedAt, postUrn, id);
-    return this.getScheduledPost(id);
+    const post = this.posts[id];
+    if (!post) return null;
+
+    post.status = 'published';
+    post.publishedAt = new Date().toISOString();
+    post.postUrn = postUrn;
+    this._save();
+
+    return this._toPost(post);
   }
 
   /**
@@ -150,13 +157,15 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} Updated post or null if not found
    */
   markAsFailed(id, errorMessage) {
-    const stmt = this.db.prepare(`
-      UPDATE scheduled_posts
-      SET status = 'failed', error_message = ?, retry_count = retry_count + 1
-      WHERE id = ?
-    `);
-    stmt.run(errorMessage, id);
-    return this.getScheduledPost(id);
+    const post = this.posts[id];
+    if (!post) return null;
+
+    post.status = 'failed';
+    post.errorMessage = errorMessage;
+    post.retryCount = (post.retryCount || 0) + 1;
+    this._save();
+
+    return this._toPost(post);
   }
 
   /**
@@ -165,16 +174,13 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} Updated post or null if not found
    */
   cancelPost(id) {
-    const stmt = this.db.prepare(`
-      UPDATE scheduled_posts
-      SET status = 'cancelled'
-      WHERE id = ? AND status = 'pending'
-    `);
-    const result = stmt.run(id);
-    if (result.changes === 0) {
-      return null; // Post not found or not in pending status
-    }
-    return this.getScheduledPost(id);
+    const post = this.posts[id];
+    if (!post || post.status !== 'pending') return null;
+
+    post.status = 'cancelled';
+    this._save();
+
+    return this._toPost(post);
   }
 
   /**
@@ -183,9 +189,11 @@ class ScheduledPostsDB {
    * @returns {boolean} True if deleted, false if not found
    */
   deleteScheduledPost(id) {
-    const stmt = this.db.prepare('DELETE FROM scheduled_posts WHERE id = ?');
-    const result = stmt.run(id);
-    return result.changes > 0;
+    if (!this.posts[id]) return false;
+
+    delete this.posts[id];
+    this._save();
+    return true;
   }
 
   /**
@@ -194,16 +202,14 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} Updated post or null if not found
    */
   resetForRetry(id) {
-    const stmt = this.db.prepare(`
-      UPDATE scheduled_posts
-      SET status = 'pending', error_message = NULL
-      WHERE id = ? AND status = 'failed'
-    `);
-    const result = stmt.run(id);
-    if (result.changes === 0) {
-      return null;
-    }
-    return this.getScheduledPost(id);
+    const post = this.posts[id];
+    if (!post || post.status !== 'failed') return null;
+
+    post.status = 'pending';
+    post.errorMessage = null;
+    this._save();
+
+    return this._toPost(post);
   }
 
   /**
@@ -213,45 +219,42 @@ class ScheduledPostsDB {
    * @returns {ScheduledPost|null} Updated post or null if not found/not pending
    */
   reschedulePost(id, newScheduledTime) {
-    const stmt = this.db.prepare(`
-      UPDATE scheduled_posts
-      SET scheduled_time = ?
-      WHERE id = ? AND status = 'pending'
-    `);
-    const result = stmt.run(newScheduledTime, id);
-    if (result.changes === 0) {
-      return null;
-    }
-    return this.getScheduledPost(id);
+    const post = this.posts[id];
+    if (!post || post.status !== 'pending') return null;
+
+    post.scheduledTime = newScheduledTime;
+    this._save();
+
+    return this._toPost(post);
   }
 
   /**
-   * Convert database row to ScheduledPost object
+   * Convert internal post to ScheduledPost object (ensures consistent casing)
    * @private
-   * @param {Object} row - Database row
+   * @param {Object} post - Internal post object
    * @returns {ScheduledPost}
    */
-  _rowToPost(row) {
+  _toPost(post) {
     return {
-      id: row.id,
-      commentary: row.commentary,
-      url: row.url,
-      visibility: row.visibility,
-      scheduledTime: row.scheduled_time,
-      status: row.status,
-      createdAt: row.created_at,
-      publishedAt: row.published_at,
-      postUrn: row.post_urn,
-      errorMessage: row.error_message,
-      retryCount: row.retry_count
+      id: post.id,
+      commentary: post.commentary,
+      url: post.url,
+      visibility: post.visibility,
+      scheduledTime: post.scheduledTime,
+      status: post.status,
+      createdAt: post.createdAt,
+      publishedAt: post.publishedAt,
+      postUrn: post.postUrn,
+      errorMessage: post.errorMessage,
+      retryCount: post.retryCount || 0
     };
   }
 
   /**
-   * Close the database connection
+   * Close the database connection (no-op for JSON, kept for API compatibility)
    */
   close() {
-    this.db.close();
+    // No-op for JSON storage
   }
 }
 
