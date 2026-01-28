@@ -1,8 +1,8 @@
 {
   "manifest_version": "0.2",
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.1.2",
-  "description": "MCP server for managing LinkedIn posts - create text, image, video, document, poll, and multi-image posts. Schedule posts, add comments and reactions.",
+  "version": "0.2.0",
+  "description": "MCP server for LinkedIn - create posts, images, videos, documents, polls. One-click OAuth via built-in relay.",
   "author": {
     "name": "Lucas Draney"
   },
@@ -19,43 +19,22 @@
         "${__dirname}/src/index.js"
       ],
       "env": {
-        "LINKEDIN_CLIENT_ID": "${user_config.linkedin_client_id}",
-        "LINKEDIN_CLIENT_SECRET": "${user_config.linkedin_client_secret}",
-        "LINKEDIN_REDIRECT_URI": "${user_config.linkedin_redirect_uri}",
         "LINKEDIN_PERSON_ID": "${user_config.linkedin_person_id}",
         "LINKEDIN_ACCESS_TOKEN": "${user_config.linkedin_access_token}"
       }
     }
   },
   "user_config": {
-    "linkedin_client_id": {
-      "type": "string",
-      "title": "Client ID (optional)",
-      "description": "LinkedIn OAuth app client ID - leave blank to set up via chat",
-      "required": false
-    },
-    "linkedin_client_secret": {
-      "type": "string",
-      "title": "Client Secret (optional)",
-      "description": "LinkedIn OAuth app client secret - leave blank to set up via chat",
-      "required": false
-    },
-    "linkedin_redirect_uri": {
-      "type": "string",
-      "title": "Redirect URI (optional)",
-      "description": "OAuth callback URL - defaults to https://localhost:8888/callback",
-      "required": false
-    },
     "linkedin_person_id": {
       "type": "string",
       "title": "Person ID (optional)",
-      "description": "Your LinkedIn person ID - obtained automatically during OAuth",
+      "description": "Your LinkedIn person ID - obtained via OAuth flow in chat",
       "required": false
     },
     "linkedin_access_token": {
       "type": "string",
       "title": "Access Token (optional)",
-      "description": "OAuth access token - obtained via linkedin_exchange_code tool",
+      "description": "OAuth access token - obtained via OAuth flow in chat",
       "required": false
     }
   },
