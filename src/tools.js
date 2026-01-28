@@ -76,7 +76,7 @@ async function linkedin_create_post_with_link(input) {
     content: {
       article: {
         source: validated.url,
-        ...(validated.title && { title: validated.title }),
+        title: validated.title || validated.url,
         ...(validated.description && { description: validated.description })
       }
     },
