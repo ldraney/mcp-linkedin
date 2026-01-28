@@ -73,7 +73,7 @@ For security vulnerabilities, see [SECURITY.md](./SECURITY.md).
 git clone https://github.com/ldraney/mcp-linkedin.git
 cd mcp-linkedin
 npm install
-npm test  # 118 tests
+npm test  # 135 tests
 ```
 
 See [CLAUDE.md](./CLAUDE.md) for architecture and API details.
