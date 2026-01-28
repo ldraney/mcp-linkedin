@@ -13,6 +13,22 @@ const LinkedInAPI = require('../src/linkedin-api');
 // Mock the database module
 jest.mock('../src/database');
 
+// Mock the auth modules
+jest.mock('../src/auth/local-server', () => ({
+  startCallbackServer: jest.fn().mockResolvedValue({
+    port: 8880,
+    nonce: 'test-nonce-1234567890abcdef',
+    waitForCallback: jest.fn().mockReturnValue(new Promise(() => {})) // Never resolves in tests
+  })
+}));
+
+jest.mock('../src/auth/token-storage', () => ({
+  storeCredentials: jest.fn(),
+  getCredentials: jest.fn().mockReturnValue(null),
+  deleteCredentials: jest.fn(),
+  hasCredentials: jest.fn().mockReturnValue(false)
+}));
+
 // Mock environment variables
 process.env.LINKEDIN_CLIENT_ID = 'test_client_id';
 process.env.LINKEDIN_CLIENT_SECRET = 'test_secret';
@@ -287,12 +303,16 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result).toHaveProperty('instructions');
     });
 
-    it('should return OAuth relay URL', async () => {
+    it('should return OAuth relay URL with local callback params', async () => {
       const result = await tools.linkedin_get_auth_url();
 
-      // Uses OAuth relay service instead of direct LinkedIn OAuth
+      // Uses OAuth relay service with local callback server
       expect(result.authUrl).toContain('/auth/linkedin');
-      expect(result.state).toBe('handled-by-relay');
+      expect(result.authUrl).toContain('port=');
+      expect(result.authUrl).toContain('nonce=');
+      // State is now a cryptographic nonce, not a static string
+      expect(result.state).toBeTruthy();
+      expect(result.state.length).toBeGreaterThan(20);
       expect(result.instructions).toContain('authenticate with LinkedIn');
     });
   });

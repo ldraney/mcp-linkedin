@@ -10,6 +10,8 @@ const path = require('path');
 const LinkedInAPI = require('./linkedin-api');
 const schemas = require('./schemas');
 const { getDatabase } = require('./database');
+const { startCallbackServer } = require('./auth/local-server');
+const { storeCredentials, getCredentials } = require('./auth/token-storage');
 
 /**
  * Get LinkedIn API client instance
@@ -146,34 +148,55 @@ async function linkedin_delete_post(input) {
 /**
  * Get OAuth authorization URL for user to visit
  * Uses our OAuth relay service for seamless authentication
+ * Starts a local callback server to automatically receive credentials
  * @returns {Promise<import('./types').GetAuthUrlOutput>}
  */
 async function linkedin_get_auth_url() {
-  // Use OAuth relay service - no need for user to have their own LinkedIn app credentials
-  const OAUTH_RELAY_URL = process.env.OAUTH_RELAY_URL || 'https://iss-linkedin-oauth.fly.dev';
-  const authUrl = `${OAUTH_RELAY_URL}/auth/linkedin`;
+  const OAUTH_RELAY_URL = process.env.OAUTH_RELAY_URL || 'https://linkedin-oauth-relay.fly.dev';
+
+  // Start local callback server
+  const { port, nonce, waitForCallback } = await startCallbackServer();
+
+  // Build auth URL with port and nonce for local callback
+  const authUrl = `${OAUTH_RELAY_URL}/auth/linkedin?port=${port}&nonce=${nonce}`;
+
+  // Wait for callback in background and auto-store credentials
+  waitForCallback()
+    .then((credentials) => {
+      // Store in OS keychain
+      storeCredentials(credentials);
+
+      // Also set in current process so tools work immediately
+      process.env.LINKEDIN_ACCESS_TOKEN = credentials.accessToken;
+      process.env.LINKEDIN_PERSON_ID = credentials.personId;
+
+      console.error('[mcp-linkedin] OAuth successful - credentials stored in keychain');
+    })
+    .catch((err) => {
+      console.error('[mcp-linkedin] OAuth failed:', err.message);
+    });
 
   return {
     authUrl,
-    state: 'handled-by-relay',
+    state: nonce,
     instructions: `1. Click the link above to authenticate with LinkedIn
-2. After you approve, you'll be redirected to a localhost URL
-3. The page won't load (that's OK!) but copy the URL from your browser
-4. Give me the URL and I'll extract your access_token and person_id from it
-   Example URL: http://localhost:8888/callback?access_token=XXX&person_id=YYY`
+2. After you approve, you'll see a "LinkedIn Connected!" success page
+3. Your credentials will be automatically and securely stored in your OS keychain
+4. Return here - the LinkedIn tools should work immediately!
+
+Note: If the page doesn't load, you may need to manually use linkedin_save_credentials with the callback URL.`
   };
 }
 
 /**
  * Save credentials from OAuth callback URL
- * Persists to ~/.mcp-linkedin-credentials.json for automatic loading
+ * Stores securely in OS keychain (macOS Keychain, Windows Credential Manager, Linux Secret Service)
  * @param {object} input
  * @param {string} input.callbackUrl - The full callback URL from browser after OAuth
  * @returns {Promise<object>}
  */
 async function linkedin_save_credentials(input) {
   const { callbackUrl } = input;
-  const os = require('os');
 
   // Parse the URL to extract parameters
   const url = new URL(callbackUrl);
@@ -181,6 +204,8 @@ async function linkedin_save_credentials(input) {
 
   const accessToken = params.get('access_token');
   const personId = params.get('person_id');
+  const refreshToken = params.get('refresh_token');
+  const expiresIn = params.get('expires_in');
   const error = params.get('error');
   const errorDescription = params.get('error_description');
 
@@ -200,16 +225,17 @@ async function linkedin_save_credentials(input) {
     };
   }
 
-  // Persist credentials to file
-  const credentialsFile = path.join(os.homedir(), '.mcp-linkedin-credentials.json');
   const credentials = {
     accessToken,
     personId,
+    refreshToken: refreshToken || null,
+    expiresAt: expiresIn ? Date.now() + parseInt(expiresIn, 10) * 1000 : null,
     savedAt: new Date().toISOString()
   };
 
   try {
-    fs.writeFileSync(credentialsFile, JSON.stringify(credentials, null, 2));
+    // Store in OS keychain
+    storeCredentials(credentials);
 
     // Also set in current process so tools work immediately
     process.env.LINKEDIN_ACCESS_TOKEN = accessToken;
@@ -219,7 +245,7 @@ async function linkedin_save_credentials(input) {
       success: true,
       accessToken,
       personId,
-      message: `Credentials saved to ${credentialsFile}
+      message: `Credentials securely stored in your OS keychain.
 
 You're all set! The LinkedIn tools should work now. Try creating a post!`
     };
@@ -227,7 +253,11 @@ You're all set! The LinkedIn tools should work now. Try creating a post!`
     return {
       success: false,
       error: 'save_failed',
-      message: `Could not save credentials: ${err.message}. You can manually set these env vars:
+      message: `Could not save credentials to keychain: ${err.message}
+
+On Linux, make sure libsecret is installed: sudo apt install libsecret-1-dev
+
+You can manually set these env vars as a fallback:
 LINKEDIN_ACCESS_TOKEN=${accessToken}
 LINKEDIN_PERSON_ID=${personId}`
     };
