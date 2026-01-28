@@ -13,7 +13,7 @@ src/
   types.js       # JSDoc type definitions
   database.js    # SQLite wrapper for scheduled posts
   scheduler.js   # Background scheduler daemon
-__tests__/       # Jest test suite (118 tests)
+__tests__/       # Jest test suite (135 tests)
 ```
 
 ## Current Tools (Phase 4 Complete)
@@ -74,7 +74,7 @@ Required in `.env`:
 ```bash
 npm start        # Start MCP server
 npm scheduler    # Start scheduler daemon (runs every minute)
-npm test         # Run tests (118 passing)
+npm test         # Run tests (135 passing)
 ```
 
 ## Roadmap
