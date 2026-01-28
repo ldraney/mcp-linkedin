@@ -9,9 +9,55 @@ const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || `https://${process.env.FLY_APP_NAME}.fly.dev/auth/callback`;
 const LOCALHOST_CALLBACK = 'http://localhost:8888/callback';
 
-// Health check
+// Landing page
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'mcp-linkedin-oauth-relay' });
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>LinkedIn MCP Auth</title>
+      <style>
+        body {
+          font-family: system-ui, -apple-system, sans-serif;
+          max-width: 600px;
+          margin: 80px auto;
+          padding: 20px;
+          background: linear-gradient(135deg, #0077b5 0%, #004182 100%);
+          min-height: 100vh;
+          box-sizing: border-box;
+        }
+        .card {
+          background: white;
+          padding: 40px;
+          border-radius: 16px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { color: #0077b5; margin: 0 0 10px 0; }
+        p { color: #666; line-height: 1.6; }
+        code { background: #f4f4f4; padding: 2px 8px; border-radius: 4px; font-size: 14px; }
+        .logo { font-size: 48px; margin-bottom: 20px; }
+        a { color: #0077b5; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="logo">in</div>
+        <h1>LinkedIn MCP Auth</h1>
+        <p>This service handles OAuth authentication for <a href="https://github.com/intelligent-staffing-systems/mcp-linkedin">mcp-linkedin</a>.</p>
+        <p>To authenticate, use the LinkedIn MCP tools in Claude Desktop:</p>
+        <pre><code>linkedin_get_auth_url</code></pre>
+        <p style="margin-top: 20px; font-size: 14px; color: #999;">
+          <a href="/health">Health check</a>
+        </p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', service: 'mcp-linkedin-oauth-relay', timestamp: new Date().toISOString() });
 });
 
 // Step 1: Redirect user to LinkedIn OAuth
