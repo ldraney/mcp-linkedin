@@ -166,12 +166,14 @@ async function linkedin_get_auth_url() {
 
 /**
  * Save credentials from OAuth callback URL
+ * Persists to ~/.mcp-linkedin-credentials.json for automatic loading
  * @param {object} input
  * @param {string} input.callbackUrl - The full callback URL from browser after OAuth
  * @returns {Promise<object>}
  */
 async function linkedin_save_credentials(input) {
   const { callbackUrl } = input;
+  const os = require('os');
 
   // Parse the URL to extract parameters
   const url = new URL(callbackUrl);
@@ -198,18 +200,38 @@ async function linkedin_save_credentials(input) {
     };
   }
 
-  // Return the credentials for the user to save
-  return {
-    success: true,
+  // Persist credentials to file
+  const credentialsFile = path.join(os.homedir(), '.mcp-linkedin-credentials.json');
+  const credentials = {
     accessToken,
     personId,
-    message: `Success! Add these to your MCP config or .env file:
-
-LINKEDIN_ACCESS_TOKEN=${accessToken}
-LINKEDIN_PERSON_ID=${personId}
-
-Then restart Claude Desktop to use the new credentials.`
+    savedAt: new Date().toISOString()
   };
+
+  try {
+    fs.writeFileSync(credentialsFile, JSON.stringify(credentials, null, 2));
+
+    // Also set in current process so tools work immediately
+    process.env.LINKEDIN_ACCESS_TOKEN = accessToken;
+    process.env.LINKEDIN_PERSON_ID = personId;
+
+    return {
+      success: true,
+      accessToken,
+      personId,
+      message: `Credentials saved to ${credentialsFile}
+
+You're all set! The LinkedIn tools should work now. Try creating a post!`
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: 'save_failed',
+      message: `Could not save credentials: ${err.message}. You can manually set these env vars:
+LINKEDIN_ACCESS_TOKEN=${accessToken}
+LINKEDIN_PERSON_ID=${personId}`
+    };
+  }
 }
 
 /**

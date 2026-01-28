@@ -6,6 +6,30 @@
  */
 
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+// Load credentials from persistent storage
+const CREDENTIALS_FILE = path.join(os.homedir(), '.mcp-linkedin-credentials.json');
+
+function loadCredentials() {
+  try {
+    if (fs.existsSync(CREDENTIALS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf8'));
+      if (data.accessToken && !process.env.LINKEDIN_ACCESS_TOKEN) {
+        process.env.LINKEDIN_ACCESS_TOKEN = data.accessToken;
+      }
+      if (data.personId && !process.env.LINKEDIN_PERSON_ID) {
+        process.env.LINKEDIN_PERSON_ID = data.personId;
+      }
+    }
+  } catch (err) {
+    // Ignore errors, will use env vars
+  }
+}
+
+loadCredentials();
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const {
