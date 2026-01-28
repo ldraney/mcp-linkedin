@@ -221,5 +221,5 @@ npm run test:manual   # Manual API test (test_post.js)
 
 - [LinkedIn Posts API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api)
 - [LinkedIn Authentication](https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication)
-- [USER_STORY.md](./USER_STORY.md) - Full user stories
+- [User Story](https://ldraney.github.io/mcp-linkedin/user-story.html) - Full user stories
 - [LINKEDIN_API_REFERENCE.md](./LINKEDIN_API_REFERENCE.md) - API details
