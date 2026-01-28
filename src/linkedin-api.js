@@ -125,7 +125,7 @@ class LinkedInAPI {
    */
   constructor(config) {
     this.accessToken = config.accessToken;
-    this.apiVersion = config.apiVersion;
+    this.apiVersion = config.apiVersion || '202501'; // YYYYMM format, default to Jan 2025
     this.personId = config.personId;
   }
 

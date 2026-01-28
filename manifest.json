@@ -1,7 +1,7 @@
 {
   "manifest_version": "0.2",
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "MCP server for LinkedIn - create posts, images, videos, documents, polls. One-click OAuth via built-in relay.",
   "author": {
     "name": "Lucas Draney"
