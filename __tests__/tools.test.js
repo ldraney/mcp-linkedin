@@ -285,17 +285,15 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result).toHaveProperty('authUrl');
       expect(result).toHaveProperty('state');
       expect(result).toHaveProperty('instructions');
-      expect(result.authUrl).toContain('linkedin.com/oauth');
     });
 
-    it('should include required OAuth parameters in URL', async () => {
+    it('should return OAuth relay URL', async () => {
       const result = await tools.linkedin_get_auth_url();
 
-      const url = new URL(result.authUrl);
-      expect(url.searchParams.get('response_type')).toBe('code');
-      expect(url.searchParams.get('client_id')).toBe('test_client_id');
-      expect(url.searchParams.get('redirect_uri')).toBe('https://localhost:3000/callback');
-      expect(url.searchParams.get('scope')).toContain('w_member_social');
+      // Uses OAuth relay service instead of direct LinkedIn OAuth
+      expect(result.authUrl).toContain('/auth/linkedin');
+      expect(result.state).toBe('handled-by-relay');
+      expect(result.instructions).toContain('authenticate with LinkedIn');
     });
   });
 
