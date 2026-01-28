@@ -156,6 +156,38 @@
       color: var(--text-muted);
     }
 
+    /* Feedback */
+    .feedback {
+      padding: 50px 20px;
+      text-align: center;
+    }
+    .feedback h2 { margin-bottom: 10px; }
+    .feedback .subtitle { color: var(--text-muted); margin-bottom: 25px; }
+    .feedback-links {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .feedback-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: 2px solid var(--border);
+      color: var(--text);
+      background: var(--card-bg);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feedback-link:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+
     /* Footer */
     footer {
       text-align: center;
@@ -286,6 +318,24 @@
         <span class="badge">✓ macOS Keychain</span>
         <span class="badge">✓ Windows Credential Manager</span>
         <span class="badge">✓ Linux Secret Service</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="feedback">
+    <div class="container">
+      <h2>Feedback Welcome</h2>
+      <p class="subtitle">Bug reports, feature requests, and ideas all welcome</p>
+      <div class="feedback-links">
+        <a href="https://github.com/ldraney/mcp-linkedin/issues/new" class="feedback-link">
+          Report a Bug
+        </a>
+        <a href="https://github.com/ldraney/mcp-linkedin/issues/new" class="feedback-link">
+          Request a Feature
+        </a>
+        <a href="https://github.com/ldraney/mcp-linkedin/security/advisories/new" class="feedback-link">
+          Report a Security Issue
+        </a>
       </div>
     </div>
   </section>
