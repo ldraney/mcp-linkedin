@@ -145,25 +145,70 @@ async function linkedin_delete_post(input) {
 
 /**
  * Get OAuth authorization URL for user to visit
+ * Uses our OAuth relay service for seamless authentication
  * @returns {Promise<import('./types').GetAuthUrlOutput>}
  */
 async function linkedin_get_auth_url() {
-  const state = crypto.randomBytes(16).toString('hex');
-
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: process.env.LINKEDIN_CLIENT_ID,
-    redirect_uri: process.env.LINKEDIN_REDIRECT_URI,
-    scope: 'openid profile email w_member_social',
-    state
-  });
-
-  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
+  // Use OAuth relay service - no need for user to have their own LinkedIn app credentials
+  const OAUTH_RELAY_URL = process.env.OAUTH_RELAY_URL || 'https://iss-linkedin-oauth.fly.dev';
+  const authUrl = `${OAUTH_RELAY_URL}/auth/linkedin`;
 
   return {
     authUrl,
-    state,
-    instructions: 'Visit this URL in your browser, authorize the app, then copy the authorization code from the callback URL'
+    state: 'handled-by-relay',
+    instructions: `1. Click the link above to authenticate with LinkedIn
+2. After you approve, you'll be redirected to a localhost URL
+3. The page won't load (that's OK!) but copy the URL from your browser
+4. Give me the URL and I'll extract your access_token and person_id from it
+   Example URL: http://localhost:8888/callback?access_token=XXX&person_id=YYY`
+  };
+}
+
+/**
+ * Save credentials from OAuth callback URL
+ * @param {object} input
+ * @param {string} input.callbackUrl - The full callback URL from browser after OAuth
+ * @returns {Promise<object>}
+ */
+async function linkedin_save_credentials(input) {
+  const { callbackUrl } = input;
+
+  // Parse the URL to extract parameters
+  const url = new URL(callbackUrl);
+  const params = url.searchParams;
+
+  const accessToken = params.get('access_token');
+  const personId = params.get('person_id');
+  const error = params.get('error');
+  const errorDescription = params.get('error_description');
+
+  if (error) {
+    return {
+      success: false,
+      error,
+      message: errorDescription || 'OAuth authentication failed'
+    };
+  }
+
+  if (!accessToken || !personId) {
+    return {
+      success: false,
+      error: 'missing_params',
+      message: 'Could not find access_token or person_id in the callback URL'
+    };
+  }
+
+  // Return the credentials for the user to save
+  return {
+    success: true,
+    accessToken,
+    personId,
+    message: `Success! Add these to your MCP config or .env file:
+
+LINKEDIN_ACCESS_TOKEN=${accessToken}
+LINKEDIN_PERSON_ID=${personId}
+
+Then restart Claude Desktop to use the new credentials.`
   };
 }
 
@@ -833,6 +878,7 @@ module.exports = {
   linkedin_get_my_posts,
   linkedin_delete_post,
   linkedin_get_auth_url,
+  linkedin_save_credentials,
   linkedin_exchange_code,
   linkedin_get_user_info,
   linkedin_update_post,

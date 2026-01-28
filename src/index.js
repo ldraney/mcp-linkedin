@@ -125,10 +125,24 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'linkedin_get_auth_url',
-    description: 'Generate OAuth authorization URL for LinkedIn. User must visit this URL to authorize the app.',
+    description: 'Generate OAuth authorization URL for LinkedIn. Uses our OAuth relay - no developer credentials needed.',
     inputSchema: {
       type: 'object',
       properties: {}
+    }
+  },
+  {
+    name: 'linkedin_save_credentials',
+    description: 'Save LinkedIn credentials from OAuth callback URL. After authenticating, paste the localhost URL here.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        callbackUrl: {
+          type: 'string',
+          description: 'Full callback URL from browser (e.g., http://localhost:8888/callback?access_token=...)'
+        }
+      },
+      required: ['callbackUrl']
     }
   },
   {
@@ -514,6 +528,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'linkedin_get_auth_url':
         result = await tools.linkedin_get_auth_url();
+        break;
+
+      case 'linkedin_save_credentials':
+        result = await tools.linkedin_save_credentials(args);
         break;
 
       case 'linkedin_exchange_code':
