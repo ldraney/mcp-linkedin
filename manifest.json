@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/intelligent-staffing-systems/mcp-linkedin.git"
+    "url": "https://github.com/ldraney/mcp-linkedin.git"
   },
   "server": {
     "type": "node",
