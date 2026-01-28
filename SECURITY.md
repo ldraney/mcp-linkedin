@@ -15,7 +15,9 @@ You should receive a response within 48 hours. We'll work with you to understand
 ### Credential Storage
 
 - OAuth tokens are stored in your **operating system's secure keychain** (macOS Keychain, Windows Credential Manager, Linux Secret Service) via [@napi-rs/keyring](https://github.com/nicedoc/keyring)
-- Tokens are **never** stored in plain text files, environment variables are only used as a fallback for development
+- Environment variables (`.env`) are supported as a fallback for development setups
+- Legacy plaintext credential file support (`~/.mcp-linkedin-credentials.json`) was removed in v0.3.x
+- Token values are masked in all tool outputs to prevent accidental exposure in logs or chat history
 - The OAuth relay server (`fly.io`) only handles the initial handshake redirect -- it never sees or stores your access token
 
 ### Data Flow
@@ -57,6 +59,7 @@ Your Machine                    External
 
 | Version | Supported |
 |---------|-----------|
+| 0.3.x   | Yes       |
 | 0.2.x   | Yes       |
 | < 0.2   | No        |
 

@@ -14,6 +14,16 @@ const { startCallbackServer } = require('./auth/local-server');
 const { storeCredentials, getCredentials } = require('./auth/token-storage');
 
 /**
+ * Mask a token for safe display (shows first 4 and last 4 chars)
+ * @param {string} token - Token to mask
+ * @returns {string} Masked token like "AQWd...5czd"
+ */
+function maskToken(token) {
+  if (!token || token.length < 12) return '****';
+  return `${token.slice(0, 4)}...${token.slice(-4)}`;
+}
+
+/**
  * Get LinkedIn API client instance
  * @returns {LinkedInAPI}
  */
@@ -243,7 +253,7 @@ async function linkedin_save_credentials(input) {
 
     return {
       success: true,
-      accessToken,
+      accessToken: maskToken(accessToken),
       personId,
       message: `Credentials securely stored in your OS keychain.
 
@@ -257,9 +267,9 @@ You're all set! The LinkedIn tools should work now. Try creating a post!`
 
 On Linux, make sure libsecret is installed: sudo apt install libsecret-1-dev
 
-You can manually set these env vars as a fallback:
-LINKEDIN_ACCESS_TOKEN=${accessToken}
-LINKEDIN_PERSON_ID=${personId}`
+Set LINKEDIN_ACCESS_TOKEN and LINKEDIN_PERSON_ID in your .env file as a fallback.
+Access token (masked): ${maskToken(accessToken)}
+Person ID: ${personId}`
     };
   }
 }
@@ -291,10 +301,10 @@ async function linkedin_exchange_code(input) {
   const personUrn = `urn:li:person:${userInfo.sub}`;
 
   return {
-    accessToken: tokenResponse.access_token,
+    accessToken: maskToken(tokenResponse.access_token),
     expiresIn: tokenResponse.expires_in,
     personUrn,
-    message: `Success! Save these to your .env file:\nLINKEDIN_ACCESS_TOKEN=${tokenResponse.access_token}\nLINKEDIN_PERSON_ID=${userInfo.sub}`
+    message: `Success! Credentials have been obtained. Store them in your OS keychain using linkedin_save_credentials or set env vars.\nAccess token (masked): ${maskToken(tokenResponse.access_token)}\nPerson ID: ${userInfo.sub}`
   };
 }
 
@@ -502,9 +512,9 @@ async function linkedin_refresh_token(input) {
   });
 
   return {
-    accessToken: tokenResponse.access_token,
+    accessToken: maskToken(tokenResponse.access_token),
     expiresIn: tokenResponse.expires_in,
-    message: `Token refreshed! Expires in ${Math.floor(tokenResponse.expires_in / 86400)} days.\nUpdate your .env:\nLINKEDIN_ACCESS_TOKEN=${tokenResponse.access_token}`
+    message: `Token refreshed! Expires in ${Math.floor(tokenResponse.expires_in / 86400)} days.\nAccess token (masked): ${maskToken(tokenResponse.access_token)}`
   };
 }
 
@@ -925,6 +935,7 @@ async function linkedin_create_post_with_multi_images(input) {
 }
 
 module.exports = {
+  maskToken,
   linkedin_create_post,
   linkedin_create_post_with_link,
   linkedin_get_my_posts,

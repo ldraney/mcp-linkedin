@@ -118,7 +118,7 @@ function startScheduler(cronExpression = '* * * * *') {
   console.log(`[${new Date().toISOString()}] LinkedIn Post Scheduler Started`);
   console.log(`  Cron expression: ${cronExpression}`);
   console.log(`  Access token configured: ${!!process.env.LINKEDIN_ACCESS_TOKEN}`);
-  console.log(`  Person ID: ${process.env.LINKEDIN_PERSON_ID}`);
+  console.log(`  Person ID configured: ${!!process.env.LINKEDIN_PERSON_ID}`);
   console.log('');
 
   // Initial check on startup
