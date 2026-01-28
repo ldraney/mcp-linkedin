@@ -6,17 +6,11 @@
  */
 
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
 const { getCredentials } = require('./auth/token-storage');
-
-// Legacy file storage path (for backward compatibility)
-const LEGACY_CREDENTIALS_FILE = path.join(os.homedir(), '.mcp-linkedin-credentials.json');
 
 /**
  * Load credentials from storage
- * Priority: env vars > OS keychain > legacy file
+ * Priority: env vars > OS keychain
  */
 function loadCredentials() {
   // Skip if already set via env vars
@@ -24,7 +18,7 @@ function loadCredentials() {
     return;
   }
 
-  // Try OS keychain first (new secure storage)
+  // Try OS keychain
   try {
     const keychainCreds = getCredentials();
     if (keychainCreds) {
@@ -37,23 +31,8 @@ function loadCredentials() {
       return;
     }
   } catch (err) {
-    // Keychain not available or access denied, fall through to legacy
-  }
-
-  // Fall back to legacy file storage (for users who haven't re-authed)
-  try {
-    if (fs.existsSync(LEGACY_CREDENTIALS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(LEGACY_CREDENTIALS_FILE, 'utf8'));
-      if (data.accessToken && !process.env.LINKEDIN_ACCESS_TOKEN) {
-        process.env.LINKEDIN_ACCESS_TOKEN = data.accessToken;
-      }
-      if (data.personId && !process.env.LINKEDIN_PERSON_ID) {
-        process.env.LINKEDIN_PERSON_ID = data.personId;
-      }
-      // Note: Next time user re-auths, credentials will be stored in keychain
-    }
-  } catch (err) {
-    // Ignore errors, will use env vars
+    console.error('[mcp-linkedin] Could not access OS keychain:', err.message);
+    console.error('[mcp-linkedin] On Linux, install libsecret: sudo apt install libsecret-1-dev');
   }
 }
 

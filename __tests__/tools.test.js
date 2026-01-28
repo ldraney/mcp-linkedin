@@ -562,7 +562,7 @@ describe('LinkedIn MCP Tools - TDD', () => {
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('expiresIn');
       expect(result).toHaveProperty('message');
-      expect(result.accessToken).toBe('new_access_token');
+      expect(result.accessToken).toBe('new_...oken');
     });
 
     it('should throw error when refresh token is missing', async () => {
