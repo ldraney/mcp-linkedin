@@ -160,6 +160,7 @@ function exchangeCodeForToken(code) {
       hostname: 'www.linkedin.com',
       path: '/oauth/v2/accessToken',
       method: 'POST',
+      family: 4, // Force IPv4 - LinkedIn IPv6 unreachable from some hosts
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(postData)
@@ -195,6 +196,7 @@ function getUserInfo(accessToken) {
       hostname: 'api.linkedin.com',
       path: '/v2/userinfo',
       method: 'GET',
+      family: 4, // Force IPv4 - LinkedIn IPv6 unreachable from some hosts
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }
