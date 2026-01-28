@@ -66,7 +66,7 @@ app.get('/auth/linkedin', (req, res) => {
     return res.status(500).json({ error: 'LINKEDIN_CLIENT_ID not configured' });
   }
 
-  const scope = 'openid profile w_member_social r_member_social';
+  const scope = 'openid profile w_member_social';
   const state = Math.random().toString(36).substring(7);
 
   const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
