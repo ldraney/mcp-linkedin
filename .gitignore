@@ -16,6 +16,17 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code
+.claude/
+
+# Playwright MCP
+.playwright-mcp/
+
+# Local files
+.current-issue
+.mcp.json
+*.tgz
+
 # MCP specific
 *.token
 auth_tokens.json
