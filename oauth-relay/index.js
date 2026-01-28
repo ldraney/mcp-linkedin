@@ -7,7 +7,23 @@ const PORT = process.env.PORT || 3000;
 const CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || `https://${process.env.FLY_APP_NAME}.fly.dev/auth/callback`;
-const LOCALHOST_CALLBACK = 'http://localhost:8888/callback';
+const DEFAULT_LOCALHOST_PORT = 8888;
+
+// Encode state with port and nonce for local callback
+function encodeState(port, nonce) {
+  const data = JSON.stringify({ port, nonce });
+  return Buffer.from(data).toString('base64url');
+}
+
+// Decode state to get port and nonce
+function decodeState(state) {
+  try {
+    const data = Buffer.from(state, 'base64url').toString('utf8');
+    return JSON.parse(data);
+  } catch {
+    return { port: DEFAULT_LOCALHOST_PORT, nonce: null };
+  }
+}
 
 // Landing page
 app.get('/', (req, res) => {
@@ -66,8 +82,12 @@ app.get('/auth/linkedin', (req, res) => {
     return res.status(500).json({ error: 'LINKEDIN_CLIENT_ID not configured' });
   }
 
+  // Get port and nonce from query params (from local callback server)
+  const port = parseInt(req.query.port, 10) || DEFAULT_LOCALHOST_PORT;
+  const nonce = req.query.nonce || null;
+
   const scope = 'openid profile email w_member_social';
-  const state = Math.random().toString(36).substring(7);
+  const state = encodeState(port, nonce);
 
   const authUrl = new URL('https://www.linkedin.com/oauth/v2/authorization');
   authUrl.searchParams.set('response_type', 'code');
@@ -81,14 +101,17 @@ app.get('/auth/linkedin', (req, res) => {
 
 // Step 2: Handle callback from LinkedIn, exchange code for token
 app.get('/auth/callback', async (req, res) => {
-  const { code, error, error_description } = req.query;
+  const { code, error, error_description, state } = req.query;
+
+  // Decode state to get port and nonce
+  const { port, nonce } = decodeState(state);
 
   if (error) {
-    return redirectToLocalhost(res, { error, error_description });
+    return redirectToLocalhost(res, port, nonce, { error, error_description });
   }
 
   if (!code) {
-    return redirectToLocalhost(res, { error: 'missing_code', error_description: 'No authorization code received' });
+    return redirectToLocalhost(res, port, nonce, { error: 'missing_code', error_description: 'No authorization code received' });
   }
 
   try {
@@ -99,7 +122,7 @@ app.get('/auth/callback', async (req, res) => {
     const userInfo = await getUserInfo(tokenData.access_token);
 
     // Redirect to localhost with token and person ID
-    redirectToLocalhost(res, {
+    redirectToLocalhost(res, port, nonce, {
       access_token: tokenData.access_token,
       expires_in: tokenData.expires_in,
       person_id: userInfo.sub,
@@ -107,12 +130,16 @@ app.get('/auth/callback', async (req, res) => {
     });
   } catch (err) {
     console.error('OAuth error:', err);
-    redirectToLocalhost(res, { error: 'token_exchange_failed', error_description: err.message });
+    redirectToLocalhost(res, port, nonce, { error: 'token_exchange_failed', error_description: err.message });
   }
 });
 
-function redirectToLocalhost(res, params) {
-  const url = new URL(LOCALHOST_CALLBACK);
+function redirectToLocalhost(res, port, nonce, params) {
+  const url = new URL(`http://localhost:${port}/callback`);
+  // Include nonce for CSRF validation
+  if (nonce) {
+    url.searchParams.set('nonce', nonce);
+  }
   Object.entries(params).forEach(([key, value]) => {
     if (value) url.searchParams.set(key, value);
   });
@@ -133,6 +160,7 @@ function exchangeCodeForToken(code) {
       hostname: 'www.linkedin.com',
       path: '/oauth/v2/accessToken',
       method: 'POST',
+      family: 4, // Force IPv4 - LinkedIn IPv6 unreachable from some hosts
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(postData)
@@ -168,6 +196,7 @@ function getUserInfo(accessToken) {
       hostname: 'api.linkedin.com',
       path: '/v2/userinfo',
       method: 'GET',
+      family: 4, // Force IPv4 - LinkedIn IPv6 unreachable from some hosts
       headers: {
         'Authorization': `Bearer ${accessToken}`
       }

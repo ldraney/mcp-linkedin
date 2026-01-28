@@ -1,4 +1,4 @@
-app = 'iss-linkedin-oauth'
+app = 'linkedin-oauth-relay'
 primary_region = 'sjc'
 
 [build]
