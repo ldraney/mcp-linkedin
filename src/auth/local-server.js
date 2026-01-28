@@ -58,6 +58,7 @@ function successPage() {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>LinkedIn Connected</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f3f2ef; }
@@ -86,6 +87,7 @@ function errorPage(error) {
   return `<!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Connection Failed</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f3f2ef; }
