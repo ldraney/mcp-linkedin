@@ -1,13 +1,29 @@
+# npx wrapper - only need manifest.json, server/index.js shim, README, LICENSE
+
+# Source (handled by npx)
+src/
+node_modules/
+package.json
+package-lock.json
+
 # Development/test files
 __tests__/
 *.test.js
 jest.config.js
 .env
 .env.example
+test_post.js
 
-# Documentation
+# Documentation (except README)
 *.md
 !README.md
+docs/
+
+# Images
+*.png
+*.webp
+*.jpg
+*.jpeg
 
 # Git
 .git/
@@ -23,11 +39,14 @@ jest.config.js
 # OAuth relay (separate deployment)
 oauth-relay/
 
-# Old database files
+# Database files
 *.db
-scheduled_posts.db
 
-# Other
-test_post.js
-todos.db
-*.html
+# Config files not needed at runtime
+.mcp.json
+.mcpbignore
+.playwright-mcp/
+
+# npm artifacts
+*.tgz
+.current-issue

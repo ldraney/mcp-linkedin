@@ -1,7 +1,7 @@
 {
-  "manifest_version": "0.2",
+  "manifest_version": "0.3",
   "name": "@ldraney/mcp-linkedin",
-  "version": "0.2.3",
+  "version": "0.3.1",
   "description": "MCP server for LinkedIn - create posts, images, videos, documents, polls. One-click OAuth via built-in relay.",
   "author": {
     "name": "Lucas Draney"
@@ -12,11 +12,12 @@
   },
   "server": {
     "type": "node",
-    "entry_point": "src/index.js",
+    "entry_point": "server/index.js",
     "mcp_config": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "${__dirname}/src/index.js"
+        "-y",
+        "@ldraney/mcp-linkedin@latest"
       ],
       "env": {
         "LINKEDIN_PERSON_ID": "${user_config.linkedin_person_id}",
@@ -35,7 +36,8 @@
       "type": "string",
       "title": "Access Token (optional)",
       "description": "OAuth access token - obtained via OAuth flow in chat",
-      "required": false
+      "required": false,
+      "sensitive": true
     }
   },
   "license": "MIT"
