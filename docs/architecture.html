@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture - mcp-linkedin</title>
+  <meta name="description" content="Technical architecture of mcp-linkedin, an open source MCP server for LinkedIn post management.">
+  <link rel="canonical" href="https://ldraney.github.io/mcp-linkedin/architecture.html">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a66c2' rx='15' width='100' height='100'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-family='system-ui' font-size='60' font-weight='bold'>m</text></svg>">
+  <style>
+    :root {
+      --primary: #0a66c2;
+      --primary-dark: #004182;
+      --bg: #f3f2ef;
+      --text: #191919;
+      --text-muted: #666;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 5px; }
+    .header a { color: white; opacity: 0.8; text-decoration: none; font-size: 0.9rem; }
+    .header a:hover { opacity: 1; }
+    .content {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .content h2 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-size: 1.3rem;
+    }
+    .content h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+    .content p, .content ul {
+      margin-bottom: 15px;
+      color: var(--text);
+    }
+    .content ul {
+      padding-left: 25px;
+    }
+    .content li {
+      margin-bottom: 5px;
+    }
+    .updated {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 30px;
+    }
+    .arch-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .arch-card h4 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+    .arch-card code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    .diagram {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 15px 0;
+      line-height: 1.4;
+    }
+    .phase-divider {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 30px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    th {
+      background: var(--card-bg);
+      font-weight: 600;
+    }
+    td { background: var(--card-bg); }
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Architecture</h1>
+    <a href="./">Back to mcp-linkedin</a>
+  </div>
+
+  <div class="content">
+    <p class="updated">Last updated: January 28, 2026</p>
+
+    <h2>Overview</h2>
+    <p>mcp-linkedin is a Node.js MCP (Model Context Protocol) server that exposes 21 tools for LinkedIn post management. It communicates with Claude Desktop over stdio and makes REST API calls to LinkedIn on behalf of the authenticated user.</p>
+
+    <div class="diagram">Claude Desktop
+    |
+    | stdio (JSON-RPC)
+    v
++-----------------+
+|   MCP Server    |  src/index.js
+|  (stdio transport)
++-----------------+
+    |
+    v
++-----------------+
+|     Tools       |  src/tools.js (21 tool handlers)
++-----------------+
+    |         |
+    v         v
++--------+ +------------+
+|LinkedIn| | Scheduler  |
+|  API   | |  Storage   |
+|Client  | | (JSON file)|
++--------+ +------------+
+    |
+    | HTTPS (REST)
+    v
++------------------+
+| LinkedIn REST API|
+| api.linkedin.com |
++------------------+</div>
+
+    <hr class="phase-divider">
+
+    <h2>Project Structure</h2>
+
+    <div class="arch-card">
+      <h4>src/index.js &mdash; MCP Server Entry Point</h4>
+      <p>Sets up the MCP server with stdio transport. Loads credentials (priority: env vars &gt; OS keychain &gt; legacy file), registers 21 tool definitions with JSON Schema input specs, and routes <code>call_tool</code> requests to the appropriate handler in <code>tools.js</code>. Handles Zod validation errors and LinkedIn API errors uniformly.</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/tools.js &mdash; Tool Implementations</h4>
+      <p>Contains all 21 tool handler functions. Each tool validates input via Zod schemas, calls the LinkedIn API client, and returns structured output. Covers content creation (text, link, image, multi-image, video, document, poll), content management (get, update, delete), social interactions (comment, react), scheduling (schedule, list, cancel, get), and authentication (auth URL, save credentials, exchange code, refresh token, user info).</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/linkedin-api.js &mdash; LinkedIn REST API Client</h4>
+      <p>HTTP client wrapping Node.js <code>https</code> module. Handles all communication with <code>api.linkedin.com</code>. Sends OAuth bearer tokens and the <code>LinkedIn-Version</code> header (YYYYMM format). Provides methods for posts, images, documents, videos, comments, reactions, and OAuth token exchange/refresh.</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/schemas.js &mdash; Zod Validation Schemas</h4>
+      <p>Runtime validation schemas for all tool inputs and outputs, LinkedIn API types (URNs, visibility, distribution), configuration, and error responses. Used by <code>tools.js</code> to validate input before any API call.</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/types.js &mdash; JSDoc Type Definitions</h4>
+      <p>JSDoc <code>@typedef</code> declarations for IDE support and documentation. Mirrors the Zod schemas but provides static type hints for development without TypeScript.</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/database.js &mdash; Scheduled Posts Storage</h4>
+      <p>JSON file-based storage (<code>~/.mcp-linkedin-scheduled-posts.json</code>) for scheduled posts. No native module dependencies. Provides CRUD operations, due post queries, retry/reschedule support, and status transitions (pending &rarr; published/failed/cancelled).</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/scheduler.js &mdash; Background Scheduler Daemon</h4>
+      <p>Standalone process using <code>node-cron</code> to check for due posts every minute. Publishes posts via the LinkedIn API client, with retry logic (3 attempts max). Handles graceful shutdown on SIGINT/SIGTERM.</p>
+    </div>
+
+    <div class="arch-card">
+      <h4>src/auth/ &mdash; Authentication Module</h4>
+      <p>Two files handle OAuth: <code>local-server.js</code> starts a local HTTP callback server to receive OAuth credentials automatically, and <code>token-storage.js</code> stores credentials in the OS keychain via <code>@napi-rs/keyring</code> (macOS Keychain, Windows Credential Manager, Linux Secret Service).</p>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Data Flow</h2>
+
+    <h3>Creating a Post</h3>
+    <ol>
+      <li>Claude Desktop sends <code>call_tool</code> with tool name and arguments over stdio</li>
+      <li><code>index.js</code> routes to the matching handler in <code>tools.js</code></li>
+      <li>Handler validates input with Zod schema from <code>schemas.js</code></li>
+      <li>Handler calls <code>LinkedInAPI</code> methods (e.g., <code>createPost</code>)</li>
+      <li><code>linkedin-api.js</code> sends HTTPS request to <code>api.linkedin.com/rest/posts</code></li>
+      <li>Response is parsed and returned as structured JSON to Claude Desktop</li>
+    </ol>
+
+    <h3>Media Upload (Image/Video/Document)</h3>
+    <ol>
+      <li>Initialize upload via LinkedIn API (get upload URL and media URN)</li>
+      <li>Read local file and PUT binary data to the upload URL</li>
+      <li>For videos: finalize upload with ETag from the PUT response</li>
+      <li>Create post referencing the media URN</li>
+    </ol>
+
+    <h3>Scheduling a Post</h3>
+    <ol>
+      <li><code>linkedin_schedule_post</code> saves post data to JSON file storage</li>
+      <li>Scheduler daemon (separate process) checks every minute for due posts</li>
+      <li>Due posts are published via the LinkedIn API</li>
+      <li>Status updated to <code>published</code> or <code>failed</code> (with retry up to 3 times)</li>
+    </ol>
+
+    <h3>OAuth Authentication</h3>
+    <ol>
+      <li><code>linkedin_get_auth_url</code> starts a local callback server and returns an OAuth relay URL</li>
+      <li>User visits URL, authenticates with LinkedIn</li>
+      <li>OAuth relay redirects back to <code>localhost</code> with credentials</li>
+      <li>Local server receives credentials and stores them in OS keychain</li>
+      <li>Credentials are set in the current process environment for immediate use</li>
+    </ol>
+
+    <hr class="phase-divider">
+
+    <h2>Key Dependencies</h2>
+    <table>
+      <tr>
+        <th>Package</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>@modelcontextprotocol/sdk</code></td>
+        <td>MCP server framework (stdio transport, request schemas)</td>
+      </tr>
+      <tr>
+        <td><code>@napi-rs/keyring</code></td>
+        <td>OS keychain access (macOS, Windows, Linux)</td>
+      </tr>
+      <tr>
+        <td><code>zod</code></td>
+        <td>Runtime input/output validation</td>
+      </tr>
+      <tr>
+        <td><code>node-cron</code></td>
+        <td>Cron-based scheduler for due post checks</td>
+      </tr>
+      <tr>
+        <td><code>uuid</code></td>
+        <td>UUID generation for scheduled post IDs</td>
+      </tr>
+      <tr>
+        <td><code>dotenv</code></td>
+        <td>Environment variable loading from <code>.env</code></td>
+      </tr>
+    </table>
+
+    <hr class="phase-divider">
+
+    <h2>LinkedIn API Integration</h2>
+    <table>
+      <tr>
+        <th>Endpoint</th>
+        <th>Method</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>/rest/posts</code></td>
+        <td>POST</td>
+        <td>Create post (text, link, image, video, document, poll, multi-image)</td>
+      </tr>
+      <tr>
+        <td><code>/rest/posts?author={urn}&amp;q=author</code></td>
+        <td>GET</td>
+        <td>Retrieve user's posts (paginated)</td>
+      </tr>
+      <tr>
+        <td><code>/rest/posts/{urn}</code></td>
+        <td>POST + PARTIAL_UPDATE</td>
+        <td>Update post (commentary, CTA, landing page)</td>
+      </tr>
+      <tr>
+        <td><code>/rest/posts/{urn}</code></td>
+        <td>DELETE</td>
+        <td>Delete post</td>
+      </tr>
+      <tr>
+        <td><code>/rest/images?action=initializeUpload</code></td>
+        <td>POST</td>
+        <td>Get image upload URL</td>
+      </tr>
+      <tr>
+        <td><code>/rest/documents?action=initializeUpload</code></td>
+        <td>POST</td>
+        <td>Get document upload URL</td>
+      </tr>
+      <tr>
+        <td><code>/rest/videos?action=initializeUpload</code></td>
+        <td>POST</td>
+        <td>Get video upload URL</td>
+      </tr>
+      <tr>
+        <td><code>/rest/videos?action=finalizeUpload</code></td>
+        <td>POST</td>
+        <td>Finalize video upload</td>
+      </tr>
+      <tr>
+        <td><code>/rest/socialActions/{urn}/comments</code></td>
+        <td>POST</td>
+        <td>Add comment to post</td>
+      </tr>
+      <tr>
+        <td><code>/rest/reactions?actor={urn}</code></td>
+        <td>POST</td>
+        <td>Add reaction to post</td>
+      </tr>
+      <tr>
+        <td><code>/v2/userinfo</code></td>
+        <td>GET</td>
+        <td>Get authenticated user profile</td>
+      </tr>
+      <tr>
+        <td><code>/oauth/v2/accessToken</code></td>
+        <td>POST</td>
+        <td>Exchange code / refresh token</td>
+      </tr>
+    </table>
+
+    <p>All requests include <code>Authorization: Bearer {token}</code>, <code>LinkedIn-Version: YYYYMM</code>, and <code>X-Restli-Protocol-Version: 2.0.0</code> headers. OAuth scope: <code>w_member_social</code>.</p>
+
+    <hr class="phase-divider">
+
+    <h2>Credential Storage</h2>
+    <p>Credentials are resolved in priority order:</p>
+    <ol>
+      <li><strong>Environment variables</strong> &mdash; <code>LINKEDIN_ACCESS_TOKEN</code> and <code>LINKEDIN_PERSON_ID</code> from <code>.env</code></li>
+      <li><strong>OS keychain</strong> &mdash; stored via <code>@napi-rs/keyring</code> after OAuth</li>
+      <li><strong>Legacy file</strong> &mdash; <code>~/.mcp-linkedin-credentials.json</code> (backward compatibility)</li>
+    </ol>
+
+    <hr class="phase-divider">
+
+    <h2>Testing</h2>
+    <p>135 tests in <code>__tests__/</code> using Jest. Tests cover all tool handlers, schema validation, database operations, scheduler logic, and API client methods using mocked HTTP responses.</p>
+    <ul>
+      <li><code>npm test</code> &mdash; run all tests</li>
+      <li><code>npm run test:watch</code> &mdash; watch mode</li>
+      <li><code>npm run test:coverage</code> &mdash; coverage report</li>
+    </ul>
+  </div>
+
+  <footer>
+    <p>
+      <a href="./">mcp-linkedin</a> &middot;
+      <a href="https://github.com/ldraney/mcp-linkedin">GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>

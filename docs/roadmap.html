@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roadmap - mcp-linkedin</title>
+  <meta name="description" content="Development roadmap for mcp-linkedin, an open source MCP server for LinkedIn post management.">
+  <link rel="canonical" href="https://ldraney.github.io/mcp-linkedin/roadmap.html">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230a66c2' rx='15' width='100' height='100'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-family='system-ui' font-size='60' font-weight='bold'>m</text></svg>">
+  <style>
+    :root {
+      --primary: #0a66c2;
+      --primary-dark: #004182;
+      --bg: #f3f2ef;
+      --text: #191919;
+      --text-muted: #666;
+      --card-bg: #fff;
+      --border: #e0e0e0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 5px; }
+    .header a { color: white; opacity: 0.8; text-decoration: none; font-size: 0.9rem; }
+    .header a:hover { opacity: 1; }
+    .content {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .content h2 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-size: 1.3rem;
+    }
+    .content h3 {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+    .content p, .content ul {
+      margin-bottom: 15px;
+      color: var(--text);
+    }
+    .content ul {
+      padding-left: 25px;
+    }
+    .content li {
+      margin-bottom: 5px;
+    }
+    .updated {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 30px;
+    }
+    .phase-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .phase-card h4 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .badge-done { background: #e6f4ea; color: #1e7e34; }
+    .badge-planned { background: #fff3cd; color: #856404; }
+    .badge-future { background: #e8eaf6; color: #3949ab; }
+    .badge-blocked { background: #fce4ec; color: #c62828; }
+    .tool-list {
+      list-style: none;
+      padding: 0;
+    }
+    .tool-list li {
+      padding: 4px 0;
+      font-size: 0.9rem;
+    }
+    .tool-list li::before {
+      content: "-> ";
+      color: var(--primary);
+    }
+    .phase-divider {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 30px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    th {
+      background: var(--card-bg);
+      font-weight: 600;
+    }
+    td { background: var(--card-bg); }
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Roadmap</h1>
+    <a href="./">Back to mcp-linkedin</a>
+  </div>
+
+  <div class="content">
+    <p class="updated">Last updated: January 28, 2026</p>
+
+    <p>mcp-linkedin follows a phased development approach. Phases 1&ndash;4 are complete with 21 tools and 135 tests. Phase 5 covers future integrations.</p>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 1 &mdash; Essential Posting <span class="badge badge-done">Complete</span></h2>
+    <p>Core LinkedIn posting and retrieval via the Posts API.</p>
+
+    <div class="phase-card">
+      <h4>Tools Delivered</h4>
+      <ul class="tool-list">
+        <li><strong>linkedin_create_post</strong> &mdash; Text posts with hashtags, mentions, configurable visibility</li>
+        <li><strong>linkedin_create_post_with_link</strong> &mdash; Posts with link previews (custom title/description)</li>
+        <li><strong>linkedin_get_my_posts</strong> &mdash; Paginated retrieval of recent posts</li>
+        <li><strong>linkedin_delete_post</strong> &mdash; Delete by URN (idempotent)</li>
+        <li><strong>linkedin_get_auth_url</strong> &mdash; OAuth flow with local callback server</li>
+        <li><strong>linkedin_save_credentials</strong> &mdash; Save credentials from OAuth callback</li>
+        <li><strong>linkedin_exchange_code</strong> &mdash; Exchange OAuth code for access token</li>
+        <li><strong>linkedin_get_user_info</strong> &mdash; Get authenticated user profile</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 2 &mdash; Content Management <span class="badge badge-done">Complete</span></h2>
+    <p>Editing posts, image uploads, and token refresh.</p>
+
+    <div class="phase-card">
+      <h4>Tools Delivered</h4>
+      <ul class="tool-list">
+        <li><strong>linkedin_update_post</strong> &mdash; Edit commentary, CTA label, landing page URL via PARTIAL_UPDATE</li>
+        <li><strong>linkedin_create_post_with_image</strong> &mdash; Upload PNG/JPG/GIF via Images API, create post with image URN, supports alt text</li>
+        <li><strong>linkedin_refresh_token</strong> &mdash; Refresh expired access tokens (60-day expiry)</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 2.5 &mdash; Social Interactions <span class="badge badge-done">Complete</span></h2>
+    <p>Commenting and reacting to posts.</p>
+
+    <div class="phase-card">
+      <h4>Tools Delivered</h4>
+      <ul class="tool-list">
+        <li><strong>linkedin_add_comment</strong> &mdash; Comment on posts (max 1250 characters)</li>
+        <li><strong>linkedin_add_reaction</strong> &mdash; React with LIKE, PRAISE, EMPATHY, INTEREST, APPRECIATION, or ENTERTAINMENT</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 3 &mdash; Scheduling <span class="badge badge-done">Complete</span></h2>
+    <p>LinkedIn API does not support native scheduling. A custom solution was built using JSON file storage and node-cron.</p>
+
+    <div class="phase-card">
+      <h4>Tools Delivered</h4>
+      <ul class="tool-list">
+        <li><strong>linkedin_schedule_post</strong> &mdash; Schedule posts for future publication (stored locally)</li>
+        <li><strong>linkedin_list_scheduled_posts</strong> &mdash; List posts by status (pending, published, failed, cancelled)</li>
+        <li><strong>linkedin_cancel_scheduled_post</strong> &mdash; Cancel pending posts</li>
+        <li><strong>linkedin_get_scheduled_post</strong> &mdash; Get details of a single scheduled post</li>
+      </ul>
+      <h4>Infrastructure</h4>
+      <ul>
+        <li>Background scheduler daemon (<code>npm run scheduler</code>) checks every minute</li>
+        <li>Retry logic: 3 attempts max per post</li>
+        <li>Graceful shutdown on SIGINT/SIGTERM</li>
+        <li>JSON file storage at <code>~/.mcp-linkedin-scheduled-posts.json</code></li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 4 &mdash; Rich Media <span class="badge badge-done">Complete</span></h2>
+    <p>All rich media types supported by the LinkedIn API for personal accounts.</p>
+
+    <div class="phase-card">
+      <h4>Tools Delivered</h4>
+      <ul class="tool-list">
+        <li><strong>linkedin_create_poll</strong> &mdash; Poll posts with 2&ndash;4 options, 1&ndash;14 day duration</li>
+        <li><strong>linkedin_create_post_with_document</strong> &mdash; Upload PDF/DOC/DOCX/PPT/PPTX (max 100 MB, 300 pages)</li>
+        <li><strong>linkedin_create_post_with_video</strong> &mdash; Upload MP4/MOV/AVI/WMV/WebM/MKV/M4V/FLV (max 200 MB)</li>
+        <li><strong>linkedin_create_post_with_multi_images</strong> &mdash; 2&ndash;20 images per post with optional alt text</li>
+      </ul>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Phase 5 &mdash; Integrations <span class="badge badge-planned">Planned</span></h2>
+    <p>Future features for extended workflow automation.</p>
+
+    <div class="phase-card">
+      <span class="badge badge-planned">Planned</span>
+      <h4>Draft Management</h4>
+      <p>Save and manage draft posts locally. LinkedIn API does not support drafts, so this would use local storage similar to the scheduling system.</p>
+    </div>
+
+    <div class="phase-card">
+      <span class="badge badge-future">Future</span>
+      <h4>GitHub Integration</h4>
+      <p>Automatically create LinkedIn posts from GitHub releases and pull requests.</p>
+    </div>
+
+    <hr class="phase-divider">
+
+    <h2>Content Support Matrix</h2>
+    <table>
+      <tr>
+        <th>Content Type</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+      <tr>
+        <td>Text</td>
+        <td>Supported</td>
+        <td>Posts API</td>
+      </tr>
+      <tr>
+        <td>Link/Article</td>
+        <td>Supported</td>
+        <td>Posts API with article content</td>
+      </tr>
+      <tr>
+        <td>Image</td>
+        <td>Supported</td>
+        <td>Images API + Posts API</td>
+      </tr>
+      <tr>
+        <td>Multi-Image</td>
+        <td>Supported</td>
+        <td>Images API + MultiImage content (2&ndash;20)</td>
+      </tr>
+      <tr>
+        <td>Video</td>
+        <td>Supported</td>
+        <td>Videos API + Posts API (initialize, upload, finalize)</td>
+      </tr>
+      <tr>
+        <td>Document</td>
+        <td>Supported</td>
+        <td>Documents API + Posts API</td>
+      </tr>
+      <tr>
+        <td>Poll</td>
+        <td>Supported</td>
+        <td>Poll API via Posts API</td>
+      </tr>
+      <tr>
+        <td>Carousel</td>
+        <td>Not available</td>
+        <td>Requires sponsored accounts only</td>
+      </tr>
+    </table>
+
+    <hr class="phase-divider">
+
+    <h2>API Limitations</h2>
+    <p>These are LinkedIn API constraints, not permission issues. All implemented features work with the <code>w_member_social</code> OAuth scope.</p>
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Native post scheduling</td>
+        <td>Not supported by API (custom solution built)</td>
+      </tr>
+      <tr>
+        <td>Draft storage</td>
+        <td>Not supported by API</td>
+      </tr>
+      <tr>
+        <td>Rate limits</td>
+        <td>Undocumented (exponential backoff used)</td>
+      </tr>
+      <tr>
+        <td>Analytics for personal posts</td>
+        <td>Unknown / undocumented</td>
+      </tr>
+      <tr>
+        <td>Profile editing</td>
+        <td>Not available via API</td>
+      </tr>
+      <tr>
+        <td>Connections list</td>
+        <td>Requires Partner Program</td>
+      </tr>
+      <tr>
+        <td>Messaging</td>
+        <td>Not available via API</td>
+      </tr>
+    </table>
+  </div>
+
+  <footer>
+    <p>
+      <a href="./">mcp-linkedin</a> &middot;
+      <a href="https://github.com/ldraney/mcp-linkedin">GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>
