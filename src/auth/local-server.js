@@ -64,12 +64,12 @@ function successPage() {
     .container { text-align: center; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h1 { color: #0a66c2; margin-bottom: 16px; }
     p { color: #666; }
-    .checkmark { font-size: 64px; margin-bottom: 16px; }
+    .checkmark { font-size: 64px; margin-bottom: 16px; color: #0a66c2; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="checkmark">✓</div>
+    <div class="checkmark">&#10003;</div>
     <h1>LinkedIn Connected!</h1>
     <p>Your credentials have been securely stored.</p>
     <p>You can close this window and return to Claude.</p>
@@ -92,13 +92,13 @@ function errorPage(error) {
     .container { text-align: center; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     h1 { color: #cc0000; margin-bottom: 16px; }
     p { color: #666; }
-    .error { font-size: 64px; margin-bottom: 16px; }
+    .error { font-size: 64px; margin-bottom: 16px; color: #cc0000; }
     .details { background: #f5f5f5; padding: 12px; border-radius: 4px; font-family: monospace; margin-top: 16px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="error">✗</div>
+    <div class="error">&#10007;</div>
     <h1>Connection Failed</h1>
     <p>There was a problem connecting your LinkedIn account.</p>
     <div class="details">${error}</div>
