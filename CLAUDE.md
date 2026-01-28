@@ -7,7 +7,7 @@ MCP server for LinkedIn post management via Claude Desktop.
 ```
 src/
   index.js       # MCP server entry point (stdio transport)
-  tools.js       # 18 tool implementations
+  tools.js       # 21 tool implementations
   linkedin-api.js # LinkedIn REST API client
   schemas.js     # Zod validation schemas
   types.js       # JSDoc type definitions
@@ -33,6 +33,7 @@ __tests__/       # Jest test suite (118 tests)
 | `linkedin_add_comment` | Add comment to a post |
 | `linkedin_add_reaction` | React to a post (LIKE, PRAISE, EMPATHY, etc.) |
 | `linkedin_get_auth_url` | Start OAuth flow |
+| `linkedin_save_credentials` | Save credentials from OAuth callback |
 | `linkedin_exchange_code` | Complete OAuth |
 | `linkedin_refresh_token` | Refresh expired access token |
 | `linkedin_get_user_info` | Get profile info |
@@ -73,7 +74,7 @@ Required in `.env`:
 ```bash
 npm start        # Start MCP server
 npm scheduler    # Start scheduler daemon (runs every minute)
-npm test         # Run tests (97 passing)
+npm test         # Run tests (118 passing)
 ```
 
 ## Roadmap

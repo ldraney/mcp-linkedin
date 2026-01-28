@@ -31,7 +31,7 @@ npx @ldraney/mcp-linkedin
 }
 ```
 
-## Tools (20 Total)
+## Tools (21 Total)
 
 ### Content Creation
 | Tool | Description |
@@ -69,6 +69,7 @@ npx @ldraney/mcp-linkedin
 | Tool | Description |
 |------|-------------|
 | `linkedin_get_auth_url` | Start OAuth flow |
+| `linkedin_save_credentials` | Save credentials from OAuth callback |
 | `linkedin_exchange_code` | Complete OAuth |
 | `linkedin_refresh_token` | Refresh expired token |
 | `linkedin_get_user_info` | Get profile info |
