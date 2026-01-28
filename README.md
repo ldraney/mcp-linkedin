@@ -63,7 +63,9 @@ Your credentials stay on your machine. The OAuth relay only handles the initial 
 ## Feedback
 
 Found a bug? Have a feature request?
-[Open an issue](https://github.com/ldraney/mcp-linkedin/issues/16)
+[Open an issue](https://github.com/ldraney/mcp-linkedin/issues/new)
+
+For security vulnerabilities, see [SECURITY.md](./SECURITY.md).
 
 ## For Developers
 
