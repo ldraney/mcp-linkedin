@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "linkedin": {
-      "command": "npx",
-      "args": ["@ldraney/mcp-linkedin"]
-    }
-  }
-}
